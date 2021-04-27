@@ -230,7 +230,7 @@ class RockBot {
             } elseif (mb_strpos($text, '- ') === 0) {
                 $this->processAlbum($text);
             } elseif (mb_strpos($text, '+') === 0) {
-                $v_name = ltrim($text, '+');
+                $v_name = addcslashes(ltrim($text, '+'), "'");
                 $this->dbh->query("UPDATE post set video_name = '{$v_name}' where finished=0;", PDO::FETCH_ASSOC)->fetch();
                 $this->telegram->sendMessage(['chat_id' => $this->chat_id, 'text' => "Video name was updated"]);
             } else {
@@ -266,7 +266,7 @@ class RockBot {
                     }
                     if (!empty($parsed[$source]['link'])) {
                         $fld = $this->music_resources[$k_s]['db_field'];
-                        $upd[$fld] = str_replace(')', '%29', $parsed[$source]['link']); // str_replace for last fm
+                        $upd[$fld] = $parsed[$source]['link'];
 						$msg .= "{$this->music_resources[$k_s]['name']} was parsed\n{$upd[$fld]}\n\n";
                     } elseif (!empty($this->music_resources[$k_s]['default'])
 						&& ((!empty($parsed[$source]['error']) && strpos($parsed[$source]['error'], 'TimeoutError') === false ) || empty($parsed[$source]['error']))
@@ -440,7 +440,7 @@ class RockBot {
             $reply_markup = $this->reply_likes;
         }
 //todo $this->vkPost($post_text, $delay_date);
-        //$this->telegram->sendMessage(['chat_id' => $this->chat_id, 'text' => $post_text['post_template'], 'disable_web_page_preview' => true, 'parse_mode' => 'Markdown']);
+        //$this->telegram->sendMessage(['chat_id' => $this->chat_id, 'text' => $post_text['post_template'], 'disable_web_page_preview' => true, 'parse_mode' => 'HTML']);
 
         if ($text != '/post') {
             if (!empty($post_text['post_video'])) {
@@ -448,7 +448,7 @@ class RockBot {
                     'chat_id' => $this->chat_id,
                     'text' => $post_text['post_video'],
                     //'reply_markup' => $reply_markup,
-                    'parse_mode' => 'Markdown',
+                    'parse_mode' => 'HTML',
                 ]);
             }
             $this->telegram->sendMessage([
@@ -456,18 +456,18 @@ class RockBot {
                 'text' => $post_text['post_text'],
                 'reply_markup' => $reply_markup,
                 'disable_web_page_preview' => (empty($post['media_link'])),
-                'parse_mode' => 'Markdown',
+                'parse_mode' => 'HTML',
             ]);
-            if ($reply_markup && empty($post_text['post_video'])) {//fixme comment it
+            /*if ($reply_markup && empty($post_text['post_video'])) {
                 $this->telegram->sendMessage([
                     'chat_id' => $this->chat_id,
                     'text' => $post_text['post_title'],
                     'reply_markup' => $reply_markup,
-                    'parse_mode' => 'Markdown',
+                    'parse_mode' => 'HTML',
                 ]);
-            }
+            }*/
         }
-        //$this->telegram->sendMessage(['chat_id' => $this->chat_id, 'text' => $post_text['post_vk_template'], 'disable_web_page_preview' => true, 'parse_mode' => 'Markdown']);
+        //$this->telegram->sendMessage(['chat_id' => $this->chat_id, 'text' => $post_text['post_vk_template'], 'disable_web_page_preview' => true]);
 
         if ($is_post) {
             $settings = $this->dbh->query('SELECT * from settings LIMIT 1;', PDO::FETCH_ASSOC)->fetch();
@@ -487,7 +487,7 @@ class RockBot {
                         'chat_id' => $post_channel_id,
                         'text' => $post_text['post_video'],
                         //'reply_markup' => $reply_markup,
-                        'parse_mode' => 'Markdown',
+                        'parse_mode' => 'HTML',
                     ]);
                 }
                 $this->telegram->sendMessage([
@@ -495,14 +495,14 @@ class RockBot {
                     'text' => $post_text['post_text'],
                     //'reply_markup' => $reply_markup,
                     'disable_web_page_preview' => (empty($post['media_link'])),
-                    'parse_mode' => 'Markdown',
+                    'parse_mode' => 'HTML',
                 ]);
                 if ($reply_markup/* && empty($post_text['post_video'])*/) {
                     $this->telegram->sendMessage([
                         'chat_id' => $post_channel_id,
                         'text' => $post_text['post_title'],
                         'reply_markup' => $reply_markup,
-                        'parse_mode' => 'Markdown',
+                        'parse_mode' => 'HTML',
                     ]);
                 }
                 $posted_date = $this->date;
@@ -511,7 +511,7 @@ class RockBot {
                 $human_date = date('G:i j F Y', strtotime($delay_date));
                 $posted_date = $delay_date;
                 $posted = 0;
-                $this->telegram->sendMessage(['chat_id' => $this->chat_id, 'text' => "*$human_date* will be posted", 'parse_mode' => 'Markdown']);
+                $this->telegram->sendMessage(['chat_id' => $this->chat_id, 'text' => "<b>$human_date</b> will be posted", 'parse_mode' => 'HTML']);
             }
             $this->dbh->exec("UPDATE post set posted_date='{$posted_date}', posted={$posted}, finished=1, is_edit=0 where finished = 0;");
             $this->dbh->exec("INSERT INTO post (finished) VALUES(0);");
@@ -580,7 +580,7 @@ class RockBot {
         if (!empty($post)) {
             if (!empty($vk_params['publish_date'])) {
                 $human_date = date('G:i j F Y', $vk_params['publish_date']);
-                $this->telegram->sendMessage(['chat_id' => $this->chat_id, 'text' => "VK post is at *$human_date*", 'parse_mode' => 'Markdown']);
+                $this->telegram->sendMessage(['chat_id' => $this->chat_id, 'text' => "VK post is at <b>$human_date</b>", 'parse_mode' => 'HTML']);
             } else {
                 $this->telegram->sendMessage(['chat_id' => $this->chat_id, 'text' => "VK posted"]);
             }
@@ -608,7 +608,7 @@ class RockBot {
             $post = $this->vk->wall()->post(self::TOKEN_VK, $vk_params);
             if (!empty($post)) {
                 $human_date = date('G:i j F Y', $vk_params['publish_date']);
-                $this->telegram->sendMessage(['chat_id' => $this->chat_id, 'text' => "VK VIDEO post is at *$human_date*", 'parse_mode' => 'Markdown']);
+                $this->telegram->sendMessage(['chat_id' => $this->chat_id, 'text' => "VK VIDEO post is at <b>$human_date</b>", 'parse_mode' => 'HTML']);
             } else {
                 $this->telegram->sendMessage(['chat_id' => $this->chat_id, 'text' => "ERROR VK VIDEO posting"]);
             }
@@ -950,73 +950,6 @@ class RockBot {
                 }
             }
 
-            /*if ($is_audio) {
-                if (!empty($settings['parser_enabled'])) {
-                    $sources = array();
-                    foreach ($this->music_resources as $key_mr => $mr) {
-                        if (empty($mr['link']) && !empty($mr['parser_name'])) {
-                            $sources[$key_mr] = $mr['parser_name'];
-                        }
-                    }
-                    if (!empty($sources)) {
-                        $this->telegram->sendMessage(['chat_id' => $this->chat_id, 'text' => "Parsing (" . implode(', ', $sources) . ") ..."]);
-                        $parsed = $this->getParsedData($artist, $album, $sources);
-                        if (!empty($parsed) && is_array($parsed)) {
-                            $parsed_images = array();
-                            foreach ($sources as $k_s => $source) {
-                                if (empty($parsed[$source])) {
-                                    $this->telegram->sendMessage(['chat_id' => $this->chat_id, 'text' => "ERROR PARSING {$this->music_resources[$k_s]['name']} was not returned from parser"]);
-                                }
-                                if (!empty($parsed[$source]['error'])) {
-                                    $this->telegram->sendMessage(['chat_id' => $this->chat_id, 'text' => "ERROR PARSING {$this->music_resources[$k_s]['name']}: {$parsed[$source]['error']}"]);
-                                }
-                                if (!empty($parsed[$source]['link'])) {
-                                    $this->music_resources[$k_s]['link'] = $parsed[$source]['link'];
-                                    $this->telegram->sendMessage(['chat_id' => $this->chat_id, 'text' => "{$this->music_resources[$k_s]['name']} was parsed\n{$parsed[$source]['link']}", 'disable_web_page_preview' => true]);
-                                }
-                                if (!empty($this->music_resources[$k_s]['image']) && !empty($parsed[$source]['image']) && empty($media_link)) {
-                                    $parsed_images[$this->music_resources[$k_s]['image']] = array(
-                                        'source_name' => $this->music_resources[$k_s]['name'],
-                                        'image' => $parsed[$source]['image'],
-                                    );
-                                    //$media_link = $this->getImageByLink($parsed[$source]['image']);
-                                    //$this->telegram->sendMessage(['chat_id' => $this->chat_id, 'text' => "Image was parsed and copied from {$this->music_resources[$k_s]['name']}"]);
-                                }
-                            }
-
-                            if ($parsed_images) {
-                                ksort($parsed_images);
-                                foreach ($parsed_images as $img) {
-                                    $media_link = $this->getImageByLink($img['image']);
-                                    if (!empty($media_link)) {
-                                        $this->telegram->sendMessage(['chat_id' => $this->chat_id, 'text' => "Image was parsed and copied from {$img['source_name']}"]);
-                                        break;
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-            }*/
-
-            $linkResult = '';
-            $i = 0;
-            foreach ($this->music_resources as $key_mr => $mr) {
-                if (empty($mr['link'])) continue;
-
-                if ($key_mr == 't.me' ) {
-                    $linkResult .= "[{$mr['name']}]({$mr['link']})\n\n";
-                } else {
-                    $i++;
-                    $linkResult .= "[{$mr['name']}]({$mr['link']}) ♪ ";
-                    if ($i == 3) {
-                        $linkResult = rtrim($linkResult, ' ♪ ') . "\n";
-                        $i = 0;
-                    }
-                }
-            }
-            $linkResult = rtrim($linkResult, ' ♪ ');
-
             $artist_db = addcslashes($artist, "'");
             $info_artist = $this->dbh->query("SELECT * from artist WHERE artist_name='{$artist_db}' LIMIT 1;", PDO::FETCH_ASSOC)->fetch();
             if (empty($tag)) {
@@ -1034,32 +967,17 @@ class RockBot {
                 }
             }
 
-            $tag_db = $tag;
-            $tag = addcslashes($tag, '_');
-
             if (empty($media_link) && !empty($post['media_link'])) {
                 $media_link = $post['media_link'];
             }
 
-            $media = '';
-            if (!empty($media_link)) {
-                $s = mb_chr(8203);
-                $media = addcslashes("[$s$s]({$media_link})", '_[');
-            }
-
-            $reply = "*{$artist}{$add_artist} - {$album}* ({$type} {$this->y}){$media}\n{$tag}";
-
-            if (!empty($linkResult)) {
-                //addcslashes чтоб отправлять шаблон ссылок, а не готовые ссылки
-                $reply .= "\n\n" . addcslashes($linkResult, '_[');
-            }
             $upd = array(
                 'type_album' => $type,
                 'strict_type' => $strict_type,
                 'artist' => $artist,
                 'add_artist' => $add_artist,
                 'album' => $album,
-                'hashtag' => $tag_db,
+                'hashtag' => $tag,
                 'media_link' => $media_link,
             );
             foreach ($this->music_resources as $mr) {
@@ -1067,6 +985,7 @@ class RockBot {
                 $upd[$mr['db_field']] = $mr['link'];
             }
 
+			$reply = $this->getPostText($upd);
             $upd_str = '';
             foreach ($upd as $ku => $u) {
                 if (!is_numeric($u)) {
@@ -1078,11 +997,11 @@ class RockBot {
             $upd_str = rtrim($upd_str, ', ');
 
             $this->dbh->exec("UPDATE post set {$upd_str} where finished = 0;");
-            $this->telegram->sendMessage(['chat_id' => $this->chat_id, 'parse_mode' => 'Markdown', 'text' => $reply, 'disable_web_page_preview' => true]);
+            $this->telegram->sendMessage(['chat_id' => $this->chat_id, 'parse_mode' => 'HTML', 'text' => $reply['post_template'], 'disable_web_page_preview' => true]);
             if ($is_audio) {
                 $parser_link = $this->parser_link . 'find/' . rawurlencode($artist) . '/' . rawurlencode($album);
                 $parser_link2 = $this->parser_link . 'find/' . rawurlencode($artist) . '/' . rawurlencode($album) . '?callback=1';
-                $this->telegram->sendMessage(['chat_id' => $this->chat_id, 'parse_mode' => 'Markdown', 'text' => "{$parser_link}\n\n{$parser_link2}\nWait a minute for response\n/parse\_links", 'disable_web_page_preview' => true]);
+                $this->telegram->sendMessage(['chat_id' => $this->chat_id, 'text' => "{$parser_link}\n\n{$parser_link2}\nWait a minute for response\n/parse_links", 'disable_web_page_preview' => true]);
                 if (!empty($settings['parser_enabled'])) {
                     $callParser = curl_init();
                     curl_setopt($callParser, CURLOPT_URL, $parser_link2);
@@ -1116,7 +1035,7 @@ class RockBot {
             $upd_str = rtrim($upd_str, ', ');
 
             $this->dbh->exec("UPDATE post set $upd_str where finished = 0;");
-            $r = $this->telegram->sendMessage(['chat_id' => $this->chat_id, 'text' => implode(' and ', $upd_names) . ' were updated', 'parse_mode' => 'Markdown', 'disable_web_page_preview' => false]);
+            $r = $this->telegram->sendMessage(['chat_id' => $this->chat_id, 'text' => implode(' and ', $upd_names) . ' were updated', 'disable_web_page_preview' => false]);
             //fwrite($this->fp, json_encode($r, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE) . "\n");
         }
     }
@@ -1129,11 +1048,6 @@ class RockBot {
         } else {
             $reply = 'The post is not finished!!!';
         }
-		$s = mb_chr(8203);
-		if (!empty($postData['media_link'])) {
-			$media = "[$s$s]({$postData['media_link']})";
-		}
-		$this->telegram->sendMessage(['chat_id' => $this->chat_id, 'text' => "<b>zzz<a href='https://www.youtube.com/watch?v=md1uRyXRT0c&t=3s'>$s$s</a>\nds&dsd </b>\n dsd & sds &amp; sss", 'parse_mode' => 'HTML']);
         $this->telegram->sendMessage(['chat_id' => $this->chat_id, 'text' => $reply]);
     }
 
@@ -1463,8 +1377,8 @@ class RockBot {
                 }
                 $r = $this->telegram->sendMessage([
                     'chat_id' => $audio_channel_id,
-                    'text' => "*{$postData['artist']}{$postData['add_artist']} - {$postData['album']}* ({$postData['type_album']} {$this->y})\n" . addcslashes($postData['hashtag'], '_') . ' @rock\_albums',
-                    'parse_mode' => 'Markdown',
+                    'text' => "<b><u>{$postData['artist']}{$postData['add_artist']} - {$postData['album']}</u></b> ({$postData['type_album']} {$this->y})\n<i>{$postData['hashtag']} @rock_albums</i>",
+                    'parse_mode' => 'HTML',
                     'disable_web_page_preview' => true,
                 ]);
                 $audio_msg_id = $r['message_id'];
@@ -1546,6 +1460,7 @@ class RockBot {
         return $audio_msg_id;
     }
 
+    //addcslashes('string', '\-\._,*][)(~`>#+=|}{!') for 'parse_mode' => 'MarkdownV2'
     private function getPostText($postData)
     {
         $ret = array(
@@ -1553,10 +1468,17 @@ class RockBot {
             'post_template' => '',
             'post_vk_template' => '',
         );
+
+		foreach ($postData as $k => $v) {
+			$postData[$k] = str_replace('>', '&gt;', str_replace('<', '&lt;', $v));
+        }
+
         $media = '';
+        $mediaMarkdown = '';
         $s = mb_chr(8203);
         if (!empty($postData['media_link'])) {
-            $media = "[$s$s]({$postData['media_link']})";
+			$media = "<a href='{$postData['media_link']}'>$s$s</a>";
+			$mediaMarkdown = "[$s$s]({$postData['media_link']})";
         }
 
 		$is_found_musuc_service = false;//in order to post or not post VR link
@@ -1568,6 +1490,7 @@ class RockBot {
 		}
 
         $linkResult = '';
+        $linkResultMarkdown = '';
         $audio_found = false;
         foreach ($this->music_resources as $mr) {
             if (!empty($mr['link']) && $is_found_musuc_service) {
@@ -1581,67 +1504,39 @@ class RockBot {
                 }
                 continue;
             }
-
-            $linkResult .= "[{$mr['name']}]({$lnk}){$mr['format']}";
+			$linkResultMarkdown .= "[{$mr['name']}]({$lnk}){$mr['format']}";
+            $linkResult .= "<a href='$lnk'>{$mr['name']}</a>{$mr['format']}";
         }
+		$linkResultMarkdown = rtrim($linkResultMarkdown, " ♪\n");
         $linkResult = rtrim($linkResult, " ♪\n");
 
         if (!$audio_found && strpos($postData['media_link'], 'youtube.com/')) {
             parse_str(parse_url($postData['media_link'],  PHP_URL_QUERY), $video_param);
             if (!empty($video_param['v'])) {
-                $linkResult = "https://youtu.be/" . addcslashes($video_param['v'], '_');
+                $linkResult = "https://youtu.be/{$video_param['v']}";
             } else {
                 $linkResult = $postData['media_link'];
             }
         }
 
-        /*$url = addcslashes('https://www.last.fm/music/pink+floyd/run+like+hell+(live+at+knebworth+1990,+2021+edit)', ')\\');
-		$this->telegram->sendMessage([
-			'chat_id' => $this->chat_id,
-			'text' => "[zzz\_zz]($url)",
-			'parse_mode' => 'MarkdownV2',
-		]);
-		$str = addcslashes('tt.t-t_tf,*][)(~`>#+=|}{!d', '\-\._,*][)(~`>#+=|}{!');
-		$this->telegram->sendMessage([
-			'chat_id' => $this->chat_id,
-			'text' => "__~*_{$str}_*~__",
-			'parse_mode' => 'MarkdownV2',
-		]);*/
-
-		$slashPostData = [
-			'artist' => '',
-			'album' => '',
-			'add_artist' => '',
-			'type_album' => '',
-			'hashtag' => '',
-			'add_text' => '',
-			'type_video' => '',
-			'video_name' => '',
-			'video_link' => '',
-		];
-		foreach ($slashPostData as $k => $v) {
-			$slashPostData[$k] = addcslashes($postData[$k], '\-\._,*][)(~`>#+=|}{!');
-		}
-
-		$ret['post_title'] = "{$slashPostData['artist']}{$slashPostData['add_artist']} \- {$slashPostData['album']}";
-		$ret['post_template'] = "*{$ret['post_title']}* \({$slashPostData['type_album']}";
+		$ret['post_title'] = "{$postData['artist']}{$postData['add_artist']} - {$postData['album']}";
+		$ret['post_template'] = "<b><u>{$ret['post_title']}</u></b> ({$postData['type_album']}";
         $ret['post_vk_api'] = "{$postData['artist']}{$postData['add_artist']} - {$postData['album']} ({$postData['type_album']}";
 
         if ($postData['type_album'] != $this->types['nlv']) {
             $ret['post_template'] .= " {$this->y}";
             $ret['post_vk_api'] .= " {$this->y}";
         }
-        $hashtag_slash = addcslashes($postData['hashtag'], '_');
+
         $ret['post_template'] .= ')';
         $ret['post_vk_api'] .= ')';
         $ret['post_text'] = $ret['post_template'];
-        $ret['post_vk_template'] = $ret['post_template'];
-        $ret['post_template'] .= addcslashes($media, '_[') . "\n{$hashtag_slash}";
-        $ret['post_text'] .= "{$media}\n{$hashtag_slash}";
-        $vk_lnk = addcslashes($postData['media_link'], '_');
-        $ret['post_vk_template'] .= "\n{$hashtag_slash}\n{$vk_lnk}";
+        $ret['post_vk_template'] = $ret['post_vk_api'];
+        $ret['post_template'] .= $mediaMarkdown . "\n{$postData['hashtag']}";
+        $ret['post_text'] .= "{$media}\n{$postData['hashtag']}";
+        $ret['post_vk_template'] .= "\n{$postData['hashtag']}\n{$postData['media_link']}";
         if (!empty($linkResult)) {
-            $ret['post_template'] .= "\n\n" . addcslashes($linkResult, '_[');
+            $ret['post_template'] .= "\n\n" . $linkResultMarkdown;
             $ret['post_text'] .= "\n\n{$linkResult}";
         }
         $ret['post_vk_api'] .= "\n{$postData['hashtag']}\n";
@@ -1651,7 +1546,7 @@ class RockBot {
             $ret['post_vk_template'] .= "\n{$postData['add_text']}\n";
             $ret['post_vk_api'] .= "\n{$postData['add_text']}\n";
         }
-        $ret['post_vk_template'] .= "\nСлушать в телеграм https://tlinks.run/rock\_albums";
+        $ret['post_vk_template'] .= "\nСлушать в телеграм https://tlinks.run/rock_albums";
         $ret['post_vk_api'] .= "\nСлушать в телеграм https://tlinks.run/rock_albums";
 
         $ret['post_video'] = '';
@@ -1659,19 +1554,19 @@ class RockBot {
         if (!empty($postData['video_link'])) {
             $v_type = empty($postData['type_video']) ? 'video' : $postData['type_video'];
             if (empty($postData['video_name'])) {
-                $ret['post_vk_api_video'] = "{$postData['artist']}{$postData['add_artist']} - {$postData['album']} ";
+                $ret['post_vk_api_video'] = "{$ret['post_title']} ";
             } else {
                 $ret['post_vk_api_video'] = "{$postData['video_name']} ";
             }
 
             parse_str(parse_url($postData['video_link'],  PHP_URL_QUERY), $video_param);
             if (!empty($video_param['v'])) {
-                $linkResult = "https://youtu.be/" . addcslashes($video_param['v'], '_');
+                $linkResult = "https://youtu.be/{$video_param['v']}";
             } else {
                 $linkResult = $postData['video_link'];
             }
-            $media = "[$s$s]({$postData['video_link']})";
-            $ret['post_video'] = "_{$ret['post_vk_api_video']}($v_type)_{$media}\n{$linkResult}";
+            $media = "<a href='{$postData['video_link']}'>$s$s</a>";
+            $ret['post_video'] = "<i>{$ret['post_vk_api_video']}($v_type)</i>{$media}\n{$linkResult}";
             $ret['post_vk_api_video'] .= "({$v_type}";
             if ($v_type != $this->types['nlv']) {
                 $ret['post_vk_api_video'] .= " {$this->y}";
@@ -1707,22 +1602,22 @@ class RockBot {
             return;
         }
 
-        foreach ($ready_posts as $id_post => $post_text) {
-            $txt = "*{$post_text['date']}* will be posted\n/edit\_{$post_text['id']}       /delete\_{$post_text['id']}\n\n";
-            if (!empty($post_text['video'])) {
+        foreach ($ready_posts as $post_ready_text) {
+            $txt = "<b>{$post_ready_text['date']}</b> will be posted\n/edit_{$post_ready_text['id']}       /delete_{$post_ready_text['id']}\n\n";
+            if (!empty($post_ready_text['video'])) {
                 $this->telegram->sendMessage([
                     'chat_id' => $this->chat_id,
-                    'text' => '(Video for the next post) ' . $txt . $post_text['video'],
-                    'reply_markup' => ($post_text['likes']) ? $this->reply_likes : null,
-                    'parse_mode' => 'Markdown',
+                    'text' => '(Video for the next post) ' . $txt . $post_ready_text['video'],
+                    'reply_markup' => ($post_ready_text['likes']) ? $this->reply_likes : null,
+                    'parse_mode' => 'HTML',
                 ]);
             }
             $this->telegram->sendMessage([
                 'chat_id' => $this->chat_id,
-                'text' => $txt . $post_text['text'],
-                'reply_markup' => ($post_text['likes'] && empty($post_text['video'])) ? $this->reply_likes : null,
-                'disable_web_page_preview' => $post_text['disable_preview'],
-                'parse_mode' => 'Markdown',
+                'text' => $txt . $post_ready_text['text'],
+                'reply_markup' => ($post_ready_text['likes'] && empty($post_ready_text['video'])) ? $this->reply_likes : null,
+                'disable_web_page_preview' => $post_ready_text['disable_preview'],
+                'parse_mode' => 'HTML',
             ]);
         }
     }
@@ -1761,7 +1656,7 @@ class RockBot {
                     $this->telegram->sendMessage([
                         'chat_id' => "@{$this->post_channel}",
                         'text' => $post_ready_text['video'],
-                        'parse_mode' => 'Markdown',
+                        'parse_mode' => 'HTML',
                         //'reply_markup' => ($post_ready_text['likes']) ? $this->reply_likes : null,
                     ]);
                 }
@@ -1770,14 +1665,14 @@ class RockBot {
                     'text' => $post_ready_text['text'],
                     //'reply_markup' => ($post_ready_text['likes']) ? $this->reply_likes : null,
                     'disable_web_page_preview' => $post_ready_text['disable_preview'],
-                    'parse_mode' => 'Markdown',
+                    'parse_mode' => 'HTML',
                 ]);
                 if ($post_ready_text['likes'] && !empty($post_ready_text['title'])/* && empty($post_ready_text['video'])*/) {
                     $this->telegram->sendMessage([
                         'chat_id' => "@{$this->post_channel}",
                         'text' => $post_ready_text['title'],
                         'reply_markup' => $this->reply_likes,
-                        'parse_mode' => 'Markdown',
+                        'parse_mode' => 'HTML',
                     ]);
                 }
                 $this->dbh->exec("UPDATE post set posted=1 where id_post = {$id_post};");
