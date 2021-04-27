@@ -1,0 +1,14 @@
+{
+    "require": {
+        "telegram-bot/api": "^2.3",
+        "irazasyed/telegram-bot-sdk": "^2.0",
+	  "ext-json": "*",
+        "vkcom/vk-php-sdk": "^5.101",
+        "tioffs/instalite": "^1.0"
+	},
+	"autoload": {
+	  "psr-4": {
+		"": "src/"
+	  }
+	}
+}

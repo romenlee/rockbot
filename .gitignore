@@ -1,0 +1,7 @@
+/.idea/
+/vendor/
+/music/
+/img/
+/log.txt
+/php_bot_errors.log
+/composer.lock
