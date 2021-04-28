@@ -13,7 +13,9 @@ use InstaLite\InstaLite;
 class RockBot {
 
     const TOKEN = '1194011134:AAHSvXAX1yQtvz1kGC4zKe0j-QVI5Kepphs';
-    const MY_CHAT = 114082814;
+    const BOT_CHAT = 114082814;
+    const NEW_ROCK_CHAT = -1001173139890;
+    //const NEW_ROCK_CHAT = -1001455135875;
     const VERSION_VK = '5.101';
     const TOKEN_VK = '16bb69f6007b2316b0bc246e446fae053e03e9b49a0b911022be7adb410a9114f06dbfd1bdda69aef41f9';
     const GROUP_ID_VK = '48186614';//13109196
@@ -103,7 +105,7 @@ class RockBot {
         }
         $this->dbh = null;
         if (!empty($this->fp)) {
-            fwrite($this->fp, "\n");
+            //fwrite($this->fp, "\n");
             fclose($this->fp);
         }
     }
@@ -141,9 +143,9 @@ class RockBot {
             } else {
                 $error_msg .= 'Result is empty';
             }
-            $this->telegram->sendMessage(['chat_id' => self::MY_CHAT, 'text' => $error_msg]);
+            $this->telegram->sendMessage(['chat_id' => self::BOT_CHAT, 'text' => $error_msg]);
         } catch (PDOException $e) {
-            $this->telegram->sendMessage(['chat_id' => self::MY_CHAT, 'text' => "PDO: {$e->getMessage()}"]);
+            $this->telegram->sendMessage(['chat_id' => self::BOT_CHAT, 'text' => "PDO: {$e->getMessage()}"]);
         }
     }
 
@@ -1179,38 +1181,33 @@ class RockBot {
 
     private function checkUpdates()
     {
+		if (empty($this->result['update_id'])) {
+			//$this->telegram->sendMessage(['chat_id' => self::BOT_CHAT, 'text' => 'Скорей всего доступ по прямой ссылке']);
+			header('HTTP/1.0 403 Forbidden');
+			echo 'You are forbidden!';
+			return false;
+		}
         $ret = true;
-        if (!empty($this->result)) {
-            $this->fp = fopen('log.txt', 'at');
-            fwrite($this->fp, "{$this->date}\n");
-            /*foreach ($this->result as $k => $v) {
-                if ($k == 'message' || $k == 'callback_query' || $k == 'edited_message' || $k == 'channel_post'  || $k == 'edited_channel_post') {
-                    fwrite($this->fp, "$k => \n");
-                    foreach ($v as $k_m => $v_m) {
-                        fwrite($this->fp, "   $k_m => " . json_encode($v_m) . "\n");
-                    }
-                } else {
-                    fwrite($this->fp, "$k => " . json_encode($v) . "\n");
-                }
-
-            }*/
-            //remove JSON_PRETTY_PRINT
-            fwrite($this->fp, json_encode($this->result, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE) . "\n");
-            //реакции на        пост в канале              редактирование поста в канале            редактирование сообщения
-            if (!empty($this->result['channel_post']) || !empty($this->result['edited_channel_post']) || !empty($this->result['edited_message'])) {
-                $ret = false;
-            } elseif (empty($this->result['update_id'])) {
-                //$decoded_result = json_decode(json_encode($this->result));
-                //if (empty($decoded_result)) {
-                //$this->telegram->sendMessage(['chat_id' => self::MY_CHAT, 'text' => 'Скорей всего доступ по прямой ссылке']);
-                $ret = false;
-                header('HTTP/1.0 403 Forbidden');
-                echo 'You are forbidden!';
-            }
-        } else {
-            $this->telegram->sendMessage(['chat_id' => self::MY_CHAT, 'text' => 'No input data']);
-            $ret = false;
-        }
+		$this->fp = fopen('log.txt', 'at');
+		fwrite($this->fp, "{$this->date} ");
+		//remove JSON_PRETTY_PRINT
+		fwrite($this->fp, json_encode($this->result, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE) . "\n");
+		$ignoredActions = [
+			'channel_post',// пост в канале
+			'edited_channel_post',//редактирование поста в канале
+			'edited_message',//редактирование сообщения
+			'my_chat_member',// действие с участником чата
+			'chat_member',// действие с участником чата
+			'poll',//опросы
+			'poll_answer',//опросы
+			'chosen_inline_result',
+		];
+		foreach ($ignoredActions as $act) {
+			if (isset($this->result[$act])) {
+				$ret = false;
+				break;
+			}
+		}
 
         return $ret;
     }
@@ -1255,7 +1252,7 @@ class RockBot {
             }
 
             if (empty($current_likes)) {
-                $this->telegram->sendMessage(['chat_id' => self::MY_CHAT, 'text' => "There is no likes in the callback {$this->result['callback_query']['id']}"]);
+                $this->telegram->sendMessage(['chat_id' => self::BOT_CHAT, 'text' => "There is no likes in the callback {$this->result['callback_query']['id']}"]);
                 fwrite($this->fp, "There is no likes in the callback {$this->result['callback_query']['id']}\n");
                 return $ret;
             }
@@ -1333,7 +1330,7 @@ class RockBot {
                 ]);
             }
         } else {
-            $this->telegram->sendMessage(['chat_id' => self::MY_CHAT, 'text' => 'Unknown callback error']);
+            $this->telegram->sendMessage(['chat_id' => self::BOT_CHAT, 'text' => 'Unknown callback error']);
             fwrite($this->fp, "Unknown callback error\n");
         }
         return $ret;
@@ -1341,15 +1338,19 @@ class RockBot {
 
     private function checkMessage() {
         if (empty($this->result['message']['chat']['id'])) {
-            $this->telegram->sendMessage(['chat_id' => self::MY_CHAT, 'text' => "Неизвестное действие \n\n" . json_encode($this->result, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE)]);
+            $this->telegram->sendMessage(['chat_id' => self::BOT_CHAT, 'text' => "Неизвестное действие \n\n" . json_encode($this->result, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE)]);
             return false;
         }
 
         $this->chat_id = $this->result['message']['chat']['id'];
-        if ($this->chat_id != self::MY_CHAT) {
+        if ($this->chat_id != self::BOT_CHAT) {
             if (!isset($this->allowed_chats[$this->chat_id])) {
-                $this->telegram->sendMessage(['chat_id' => self::MY_CHAT, 'text' => "Доступ с левого чата!\n\n" . json_encode($this->result, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE),]);
-            }// else $this->telegram->sendMessage(['chat_id' => self::MY_CHAT, 'text' => "Доступ с: {$this->allowed_chats[$this->chat_id]}",]);
+                $this->telegram->sendMessage(['chat_id' => self::BOT_CHAT, 'text' => "Доступ с левого чата!\n\n" . json_encode($this->result, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE),]);
+            }// else $this->telegram->sendMessage(['chat_id' => self::BOT_CHAT, 'text' => "Доступ с: {$this->allowed_chats[$this->chat_id]}",]);
+
+			if ($this->chat_id == self::NEW_ROCK_CHAT) {
+				$this->processChatMessage();
+			}
             return false;
         }
 
@@ -1359,6 +1360,19 @@ class RockBot {
         }
         return true;
     }
+
+    private function processChatMessage()
+	{
+		//777000 - messages automatically forwarded to the discussion group
+		if (empty($this->result['message']['text']) || empty($this->result['message']['message_id']) || !empty($this->result['message']['entities'])
+			|| empty($this->result['message']['from']['id']) || $this->result['message']['from']['id'] != 777000) {
+			return;
+		}
+		$text = trim($this->result['message']['text']);
+		if (mb_strlen($text) > 100 || mb_substr_count($text, ' - ') != 1)
+			return;
+		$this->telegram->sendAnyRequest('deleteMessage', ['chat_id' => $this->chat_id, 'message_id' => $this->result['message']['message_id']]);
+	}
 
     private function getPostAudio(&$postData, $audio_channel_id)
     {
@@ -1648,7 +1662,7 @@ class RockBot {
         }
 
         $this->fp = fopen('log.txt', 'at');
-        fwrite($this->fp, "{$this->date} cron\n");
+        fwrite($this->fp, "{$this->date} cron ");
         try {
             $this->telegram = new MyApi(self::TOKEN);
             foreach ($ready_posts as $id_post => $post_ready_text) {
@@ -1680,9 +1694,9 @@ class RockBot {
             }
         } catch (TelegramSDKException $e) {
             $text = $e->getMessage() . "\nFile: " . $e->getFile() . " Line: " . $e->getLine() . "\nTrace:\n" . $e->getTraceAsString() . "\n";
-            $this->telegram->sendMessage(['chat_id' => self::MY_CHAT, 'text' => $text]);
+            $this->telegram->sendMessage(['chat_id' => self::BOT_CHAT, 'text' => $text]);
         } catch (PDOException $e) {
-            $this->telegram->sendMessage(['chat_id' => self::MY_CHAT, 'text' => "PDO: {$e->getMessage()}"]);
+            $this->telegram->sendMessage(['chat_id' => self::BOT_CHAT, 'text' => "PDO: {$e->getMessage()}"]);
         }
     }
 
@@ -1711,15 +1725,15 @@ class RockBot {
         }
 
         $this->currentPost = $post;
-        $this->chat_id = self::MY_CHAT;
+        $this->chat_id = self::BOT_CHAT;
         try {
             $this->telegram = new MyApi(self::TOKEN);
             $this->parseLinks($results['results']);
         } catch (TelegramSDKException $e) {
             $text = $e->getMessage() . "\nFile: " . $e->getFile() . " Line: " . $e->getLine() . "\nTrace:\n" . $e->getTraceAsString() . "\n";
-            $this->telegram->sendMessage(['chat_id' => self::MY_CHAT, 'text' => $text]);
+            $this->telegram->sendMessage(['chat_id' => self::BOT_CHAT, 'text' => $text]);
         } catch (PDOException $e) {
-            $this->telegram->sendMessage(['chat_id' => self::MY_CHAT, 'text' => "PDO: {$e->getMessage()}"]);
+            $this->telegram->sendMessage(['chat_id' => self::BOT_CHAT, 'text' => "PDO: {$e->getMessage()}"]);
         }
     }
 
