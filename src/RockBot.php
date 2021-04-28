@@ -1470,7 +1470,7 @@ class RockBot {
         );
 
 		foreach ($postData as $k => $v) {
-			$postData[$k] = str_replace('>', '&gt;', str_replace('<', '&lt;', $v));
+			$postData[$k] = str_replace(['>', '<'], ['&gt;', '&lt;'], $v);
         }
 
         $media = '';
@@ -1493,11 +1493,11 @@ class RockBot {
         $linkResultMarkdown = '';
         $audio_found = false;
         foreach ($this->music_resources as $mr) {
-            if (!empty($mr['link']) && $is_found_musuc_service) {
-                $lnk = $mr['link'];
-            } elseif (!empty($mr['db_field']) && !empty($postData[$mr['db_field']])) {
+            if (!empty($mr['db_field']) && !empty($postData[$mr['db_field']])) {
                 $lnk = $postData[$mr['db_field']];
                 $audio_found = true;
+            } elseif (!empty($mr['link']) && $is_found_musuc_service) {
+                $lnk = $mr['link'];
             } else {
                 if ($mr['format'] === "\n") {
                     $linkResult  .= $mr['format'];
@@ -1505,7 +1505,7 @@ class RockBot {
                 continue;
             }
 			$linkResultMarkdown .= "[{$mr['name']}]({$lnk}){$mr['format']}";
-            $linkResult .= "<a href='$lnk'>{$mr['name']}</a>{$mr['format']}";
+            $linkResult .= "<a href=\"$lnk\">{$mr['name']}</a>{$mr['format']}";
         }
 		$linkResultMarkdown = rtrim($linkResultMarkdown, " ♪\n");
         $linkResult = rtrim($linkResult, " ♪\n");
