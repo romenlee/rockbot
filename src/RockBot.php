@@ -164,16 +164,16 @@ class RockBot {
         } elseif ($text == '/delayed') {
             $this->getDelayedPosts();
         } elseif ($text == '/parser_on') {
-            $this->dbh->query('UPDATE settings set parser_enabled = 1;', PDO::FETCH_ASSOC)->fetch();
+            $this->dbh->exec('UPDATE settings set parser_enabled = 1;', PDO::FETCH_ASSOC);
             $this->telegram->sendMessage(['chat_id' => $this->chat_id, 'text' => 'Parser enabled']);
         } elseif ($text == '/parser_off') {
-            $this->dbh->query('UPDATE settings set parser_enabled = 0;', PDO::FETCH_ASSOC)->fetch();
+            $this->dbh->exec('UPDATE settings set parser_enabled = 0;', PDO::FETCH_ASSOC);
             $this->telegram->sendMessage(['chat_id' => $this->chat_id, 'text' => 'Parser disabled']);
         } elseif (mb_strpos($text, '/edit_') === 0) {
             $id = explode('_', $text);
             if (!empty($id[1])) {
                 $this->dbh->exec("DELETE FROM post WHERE finished=0;");
-                $this->dbh->query("UPDATE post set finished = 0, posted_date = NULL, is_edit = 1 where id_post={$id[1]};", PDO::FETCH_ASSOC)->fetch();
+                $this->dbh->exec("UPDATE post set finished = 0, posted_date = NULL, is_edit = 1 where id_post={$id[1]};", PDO::FETCH_ASSOC);
                 $this->telegram->sendMessage(['chat_id' => $this->chat_id, 'text' => "Edit post {$id[1]}"]);
             }
         } elseif (mb_strpos($text, '/delete_') === 0) {
@@ -221,7 +221,7 @@ class RockBot {
                 $add_txt = str_replace('/add ', '', $text);
                 if (!empty($add_txt)) {
                     $add_txt = addcslashes($add_txt, "'");
-                    $this->dbh->query("UPDATE post set add_text = '{$add_txt}' where finished=0;", PDO::FETCH_ASSOC)->fetch();
+                    $this->dbh->exec("UPDATE post set add_text = '{$add_txt}' where finished=0;", PDO::FETCH_ASSOC);
                     $this->telegram->sendMessage(['chat_id' => $this->chat_id, 'text' => "Additional text was updated"]);
                 }
             } elseif (mb_strpos($text, 'http') === 0) {
@@ -234,7 +234,7 @@ class RockBot {
                 $this->processAlbum($text);
             } elseif (mb_strpos($text, '+') === 0) {
                 $v_name = addcslashes(ltrim($text, '+'), "'");
-                $this->dbh->query("UPDATE post set video_name = '{$v_name}' where finished=0;", PDO::FETCH_ASSOC)->fetch();
+                $this->dbh->exec("UPDATE post set video_name = '{$v_name}' where finished=0;", PDO::FETCH_ASSOC);
                 $this->telegram->sendMessage(['chat_id' => $this->chat_id, 'text' => "Video name was updated"]);
             } else {
                 $this->parseText($text);
@@ -1431,7 +1431,7 @@ class RockBot {
                         'chat_id' => $audio_channel_id,
                         'media' => json_encode($media),
                     ]);
-                    sleep(2);
+                    //sleep(2);
                     if (empty($audio_msg_id)) {
                         if (!empty($r[0]['message_id'])) {
                             $audio_msg_id = $r[0]['message_id'];
