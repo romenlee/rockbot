@@ -121,7 +121,7 @@ class RockBot {
                 return;
             }
 
-            $pdo_opt = array(PDO::ATTR_PERSISTENT => true);
+            $pdo_opt = array(PDO::ATTR_PERSISTENT => true, PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION);
             $this->dbh = new PDO('mysql:host=pixis.mysql.tools;dbname=pixis_rockbot;charset=utf8', 'pixis_rockbot', '1&sV08S@tt', $pdo_opt);
             if ($this->checkCallback()) {
                 return;
@@ -145,7 +145,8 @@ class RockBot {
             }
             $this->telegram->sendMessage(['chat_id' => self::BOT_CHAT, 'text' => $error_msg]);
         } catch (PDOException $e) {
-            $this->telegram->sendMessage(['chat_id' => self::BOT_CHAT, 'text' => "PDO: {$e->getMessage()}"]);
+			$text = "PDO error:\n" .$e->getMessage() . "\nFile: " . $e->getFile() . " Line: " . $e->getLine() . "\nTrace:\n" . $e->getTraceAsString() . "\n";
+            $this->telegram->sendMessage(['chat_id' => self::BOT_CHAT, 'text' => $text]);
         }
     }
 
@@ -1637,7 +1638,7 @@ class RockBot {
     }
     private function executeCron()
     {
-        $pdo_opt = array(PDO::ATTR_PERSISTENT => true);
+        $pdo_opt = array(PDO::ATTR_PERSISTENT => true, PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION);
         $this->dbh = new PDO('mysql:host=pixis.mysql.tools;dbname=pixis_rockbot;charset=utf8', 'pixis_rockbot', '1&sV08S@tt', $pdo_opt);
         $res = $this->dbh->query("SELECT * from post WHERE posted_date < '{$this->date}' AND posted=0 AND finished=1 ORDER BY posted_date,id_post;", PDO::FETCH_ASSOC)->fetchAll();
         $ready_posts = array();
@@ -1696,7 +1697,8 @@ class RockBot {
             $text = $e->getMessage() . "\nFile: " . $e->getFile() . " Line: " . $e->getLine() . "\nTrace:\n" . $e->getTraceAsString() . "\n";
             $this->telegram->sendMessage(['chat_id' => self::BOT_CHAT, 'text' => $text]);
         } catch (PDOException $e) {
-            $this->telegram->sendMessage(['chat_id' => self::BOT_CHAT, 'text' => "PDO: {$e->getMessage()}"]);
+			$text = "PDO error:\n" .$e->getMessage() . "\nFile: " . $e->getFile() . " Line: " . $e->getLine() . "\nTrace:\n" . $e->getTraceAsString() . "\n";
+            $this->telegram->sendMessage(['chat_id' => self::BOT_CHAT, 'text' => $text]);
         }
     }
 
@@ -1709,7 +1711,7 @@ class RockBot {
         if (empty($results) || empty($results['group']) || empty($results['album']) || empty($results['results'])) {
             return;
         }
-        $pdo_opt = array(PDO::ATTR_PERSISTENT => true);
+        $pdo_opt = array(PDO::ATTR_PERSISTENT => true, PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION);
         $this->dbh = new PDO('mysql:host=pixis.mysql.tools;dbname=pixis_rockbot;charset=utf8', 'pixis_rockbot', '1&sV08S@tt', $pdo_opt);
         $post = $this->dbh->query("SELECT * from post WHERE finished=0;", PDO::FETCH_ASSOC)->fetch();
         if (empty($post['artist'])) {
@@ -1733,7 +1735,8 @@ class RockBot {
             $text = $e->getMessage() . "\nFile: " . $e->getFile() . " Line: " . $e->getLine() . "\nTrace:\n" . $e->getTraceAsString() . "\n";
             $this->telegram->sendMessage(['chat_id' => self::BOT_CHAT, 'text' => $text]);
         } catch (PDOException $e) {
-            $this->telegram->sendMessage(['chat_id' => self::BOT_CHAT, 'text' => "PDO: {$e->getMessage()}"]);
+			$text = "PDO error:\n" .$e->getMessage() . "\nFile: " . $e->getFile() . " Line: " . $e->getLine() . "\nTrace:\n" . $e->getTraceAsString() . "\n";
+            $this->telegram->sendMessage(['chat_id' => self::BOT_CHAT, 'text' => $text]);
         }
     }
 
