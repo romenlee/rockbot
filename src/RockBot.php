@@ -1561,8 +1561,8 @@ class RockBot {
             $ret['post_vk_template'] .= "\n{$postData['add_text']}\n";
             $ret['post_vk_api'] .= "\n{$postData['add_text']}\n";
         }
-        $ret['post_vk_template'] .= "\nСлушать в телеграм https://tlinks.run/rock_albums";
-        $ret['post_vk_api'] .= "\nСлушать в телеграм https://tlinks.run/rock_albums";
+        $ret['post_vk_template'] .= "\nСлушать в телеграм https://t.me/rock_albums";//https://tlinks.run/rock_albums
+        $ret['post_vk_api'] .= "\nСлушать в телеграм https://t.me/rock_albums";
 
         $ret['post_video'] = '';
         $ret['post_vk_api_video'] = '';
@@ -1586,7 +1586,7 @@ class RockBot {
             if ($v_type != $this->types['nlv']) {
                 $ret['post_vk_api_video'] .= " {$this->y}";
             }
-            $ret['post_vk_api_video'] .= ")\n{$postData['hashtag']}\n\nСлушать в телеграм https://tlinks.run/rock_albums";
+            $ret['post_vk_api_video'] .= ")\n{$postData['hashtag']}\n\nСлушать в телеграм https://t.me/rock_albums";
         }
         return $ret;
     }
