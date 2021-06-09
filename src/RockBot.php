@@ -12,7 +12,7 @@ use InstaLite\InstaLite;
 
 class RockBot {
 
-    const TOKEN = '1194011134:AAHc7u-Q-LeinksI9esqxklN-DpGVCkq-ik';
+    const TOKEN = '1194011134:AAFKS0zLAkQ8jay2S2KJnrllWdr3QduuGj8';
     const BOT_CHAT = 114082814;
     const NEW_ROCK_CHAT = -1001173139890;
     //const NEW_ROCK_CHAT = -1001455135875;
