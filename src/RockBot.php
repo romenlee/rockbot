@@ -1485,7 +1485,9 @@ class RockBot {
         );
 
 		foreach ($postData as $k => $v) {
-			$postData[$k] = str_replace(['>', '<'], ['&gt;', '&lt;'], $v);
+			if ($k != 'add_text') {
+				$postData[$k] = str_replace(['>', '<'], ['&gt;', '&lt;'], $v);
+			}
         }
 
         $media = '';
