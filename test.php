@@ -29,7 +29,7 @@ echo date('H:i:s');
 $date = date('H:i:s');
 //phpinfo();
 use InstaLite\InstaLite;
-$instagram = new InstaLite("new_rock_albums", "Derparol05912");//netpeak05912
+$instagram = new InstaLite("new_rock_albums", "netpeak05912");//Derparol05912
 prn($instagram);
 //prn($instagram->uploadPhoto('img/1588757590.jpg', 'text #hashtag'));
 die;
