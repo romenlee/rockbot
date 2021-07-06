@@ -17,7 +17,7 @@ class RockBot {
     const NEW_ROCK_CHAT = -1001173139890;
     //const NEW_ROCK_CHAT = -1001455135875;
     const VERSION_VK = '5.101';
-    const TOKEN_VK = '16bb69f6007b2316b0bc246e446fae053e03e9b49a0b911022be7adb410a9114f06dbfd1bdda69aef41f9';
+    const TOKEN_VK = 'da0bdc3605b959d9dd58bfff14b3e59a3600ff0d914ab6c17bb0a056801436105b9cd03c780e7cc9584ad';
     const GROUP_ID_VK = '48186614';//13109196
 
     private $fp;
