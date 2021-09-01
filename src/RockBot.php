@@ -63,7 +63,7 @@ class RockBot {
     ];
     private $music_resources = array(
         't.me' => array('name' => "🎸 СЛУШАТЬ / LISTEN ⏯", 'db_field' => 't_me', 'format' => "   "),
-        'chat' => array('name' => "Discuss", 'link' => 'https://t.me/rock_chat', 'format' => "\n\n"),
+        'chat' => array('name' => "Chat", 'link' => 'https://t.me/rock_chat', 'format' => "\n\n"),
         'spotify.com' => array('name' => 'Spotify', 'db_field' => 'spotify', 'parser_name' => 'spotify', 'image' => 1, 'format' => " ♪ "),
         'music.apple' => array('name' => 'Apple music', 'db_field' => 'music_apple', 'parser_name' => 'apple', 'format' => " ♪ "),
         'vk.com' => array('name' => 'VK', 'link' => 'https://vk.com/novue_rock_albomu_2013', 'format' => "\n"),
