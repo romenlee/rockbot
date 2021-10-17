@@ -36,7 +36,9 @@ class RockBot {
     private $chat_id;
     private $dev_channel = 'my_dev';
     private $post_channel = 'rock_albums';
-    private $audio_channel = 'new_rotsk';
+    //private $audio_channel = 'new_rotsk';
+    private $audio_channel = 'rotsk_new';
+    private $audio_channel_reserve = '-1001311635101';
     private $allowed_chats = array(
         '114082814' => '114082814',//me
         '-1001455135875' => 'my develop chat',//my develop chat
@@ -62,7 +64,7 @@ class RockBot {
         ],
     ];
     private $music_resources = array(
-        't.me' => array('name' => "🎸 СЛУШАТЬ / LISTEN ⏯", 'db_field' => 't_me', 'format' => "   "),
+        't.me' => array('name' => "🎸 СЛУШАТЬ ⏯", 'db_field' => 't_me', 'format' => "   "),
         'chat' => array('name' => "Chat", 'link' => 'https://t.me/rock_chat', 'format' => "\n\n"),
         'spotify.com' => array('name' => 'Spotify', 'db_field' => 'spotify', 'parser_name' => 'spotify', 'image' => 1, 'format' => " ♪ "),
         'music.apple' => array('name' => 'Apple music', 'db_field' => 'music_apple', 'parser_name' => 'apple', 'format' => " ♪ "),
@@ -413,8 +415,10 @@ class RockBot {
         $is_post = false;
         $audio_channel_id = $this->chat_id;
         $post_channel_id = $this->chat_id;
+        $post['is_post'] = false;
         if ($text == '/post' || !empty($delay_date)) {
             $is_post = true;
+            $post['is_post'] = true;
             $audio_channel_id = "@{$this->audio_channel}";
             $post_channel_id = "@{$this->post_channel}";
             /*$audio_channel_id = "@{$this->dev_channel}";
@@ -1396,6 +1400,14 @@ class RockBot {
                     'parse_mode' => 'HTML',
                     'disable_web_page_preview' => true,
                 ]);
+                if (!empty($postData['is_post'])) {
+                    $this->telegram->sendMessage([
+                        'chat_id' => $this->audio_channel_reserve,
+                        'text' => "<b><u>{$postData['artist']}{$postData['add_artist']} - {$postData['album']}</u></b> ({$postData['type_album']} {$this->y})\n<i>{$postData['hashtag']} @rock_albums</i>",
+                        'parse_mode' => 'HTML',
+                        'disable_web_page_preview' => true,
+                    ]);
+                }
                 $audio_msg_id = $r['message_id'];
             } else {
                 $caption = "{$postData['type_album']} {$postData['hashtag']} @rock_albums";
@@ -1431,6 +1443,12 @@ class RockBot {
                         'chat_id' => $audio_channel_id,
                         'media' => json_encode($media),
                     ]);
+                    if (!empty($postData['is_post'])) {
+                        $this->telegram->sendAnyRequest('sendMediaGroup', [
+                            'chat_id' => $this->audio_channel_reserve,
+                            'media' => json_encode($media),
+                        ]);
+                    }
                     //sleep(2);
                     if (empty($audio_msg_id)) {
                         if (!empty($r[0]['message_id'])) {
@@ -1445,6 +1463,12 @@ class RockBot {
                         'chat_id' => $audio_channel_id,
                         'sticker' => 'CAACAgIAAxkBAAIE2F6mIbABvnIAAQqXBP1iFqSU-ZJ_0wACDAADNjqiGWbGGbgDTI49GQQ',
                     ]);
+                    if (!empty($postData['is_post'])) {
+                        $this->telegram->sendSticker([
+                            'chat_id' => $this->audio_channel_reserve,
+                            'sticker' => 'CAACAgIAAxkBAAIE2F6mIbABvnIAAQqXBP1iFqSU-ZJ_0wACDAADNjqiGWbGGbgDTI49GQQ',
+                        ]);
+                    }
                 }
             } else {
                 $i = 0;
@@ -1454,6 +1478,13 @@ class RockBot {
                         'audio' => $audio['file'],
                         'caption' => $caption,
                     ]);
+                    if (!empty($postData['is_post'])) {
+                        $this->telegram->sendAudio([
+                            'chat_id' => $this->audio_channel_reserve,
+                            'audio' => $audio['file'],
+                            'caption' => $caption,
+                        ]);
+                    }
 
                     if (empty($audio_msg_id)) {
                         $audio_msg_id = $r['message_id'];
@@ -1469,6 +1500,12 @@ class RockBot {
                         'chat_id' => $audio_channel_id,
                         'sticker' => 'CAACAgIAAxkBAAIE2F6mIbABvnIAAQqXBP1iFqSU-ZJ_0wACDAADNjqiGWbGGbgDTI49GQQ',
                     ]);
+                    if (!empty($postData['is_post'])) {
+                        $this->telegram->sendSticker([
+                            'chat_id' => $this->audio_channel_reserve,
+                            'sticker' => 'CAACAgIAAxkBAAIE2F6mIbABvnIAAQqXBP1iFqSU-ZJ_0wACDAADNjqiGWbGGbgDTI49GQQ',
+                        ]);
+                    }
                 }
             }
         }
