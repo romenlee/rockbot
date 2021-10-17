@@ -37,8 +37,8 @@ class RockBot {
     private $dev_channel = 'my_dev';
     private $post_channel = 'rock_albums';
     //private $audio_channel = 'new_rotsk';
-    private $audio_channel = 'rotsk_new';
-    private $audio_channel_reserve = '-1001311635101';
+    private $audio_channel = '-1001311635101';
+    private $audio_channel_reserve = '-1001652161100';
     private $allowed_chats = array(
         '114082814' => '114082814',//me
         '-1001455135875' => 'my develop chat',//my develop chat
@@ -419,7 +419,7 @@ class RockBot {
         if ($text == '/post' || !empty($delay_date)) {
             $is_post = true;
             $post['is_post'] = true;
-            $audio_channel_id = "@{$this->audio_channel}";
+            $audio_channel_id = "{$this->audio_channel}";
             $post_channel_id = "@{$this->post_channel}";
             /*$audio_channel_id = "@{$this->dev_channel}";
             $post_channel_id = "@{$this->dev_channel}";*/
@@ -429,7 +429,8 @@ class RockBot {
         if (empty($post['t_me'])) {
             $audio_msg_id = $this->getPostAudio($post, $audio_channel_id);
             if (!empty($audio_msg_id)) {
-                $post['t_me'] = "https://t.me/{$this->audio_channel}/{$audio_msg_id}";
+            	$a_link = str_replace('-100', 'c/', $this->audio_channel);
+                $post['t_me'] = "https://t.me/{$a_link}/{$audio_msg_id}";
                 if ($is_post) {
                     $this->dbh->exec("UPDATE post set t_me='{$post['t_me']}' where id_post = {$post['id_post']};");
                 }
