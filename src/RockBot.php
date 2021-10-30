@@ -12,10 +12,12 @@ use InstaLite\InstaLite;
 
 class RockBot {
 
-    const TOKEN = '1194011134:AAFKS0zLAkQ8jay2S2KJnrllWdr3QduuGj8';
+    const TOKEN = '1194011134:AAGHpeLzK0PAOe1tgoitznj9hAkcEpi13to';
     const BOT_CHAT = 114082814;
     const NEW_ROCK_CHAT = -1001173139890;
     //const NEW_ROCK_CHAT = -1001455135875;
+    const AUDIO_CHAT = -1001655871229;
+    const AUDIO_CHAT_NAME = 'alternative_rock_metal';
     const VERSION_VK = '5.101';
     const TOKEN_VK = 'da0bdc3605b959d9dd58bfff14b3e59a3600ff0d914ab6c17bb0a056801436105b9cd03c780e7cc9584ad';
     const GROUP_ID_VK = '48186614';//13109196
@@ -37,6 +39,7 @@ class RockBot {
     private $dev_channel = 'my_dev';
     private $post_channel = 'rock_albums';
     //private $audio_channel = 'new_rotsk';
+    //private $audio_channel = '-1001655871229';
     private $audio_channel = '-1001311635101';
     private $audio_channel_reserve = '-1001652161100';
     private $allowed_chats = array(
@@ -44,6 +47,7 @@ class RockBot {
         '-1001455135875' => 'my develop chat',//my develop chat
         '-1001173139890' => 'new rock chat',//new rock chat
         '-1001488152998' => 'my dev channel',//my dev channel
+        '-1001655871229' => 'audio chat',//audio files channel
         '-1001348573922' => 'Канал Новые рок альбомы и клипы',//Канал Новые рок альбомы и клипы
     );
     private $reply_likes;
@@ -65,7 +69,7 @@ class RockBot {
     ];
     private $music_resources = array(
         't.me' => array('name' => "🎸 СЛУШАТЬ ⏯", 'db_field' => 't_me', 'format' => "   "),
-        'chat' => array('name' => "Chat", 'link' => 'https://t.me/rock_chat', 'format' => "\nссылка на канал с музыкой в описании\n"),
+        'chat' => array('name' => "Chat", 'link' => 'https://t.me/rock_chat', 'format' => "\n\n"),
         'spotify.com' => array('name' => 'Spotify', 'db_field' => 'spotify', 'parser_name' => 'spotify', 'image' => 1, 'format' => " ♪ "),
         'music.apple' => array('name' => 'Apple music', 'db_field' => 'music_apple', 'parser_name' => 'apple', 'format' => " ♪ "),
         'vk.com' => array('name' => 'VK', 'link' => 'https://vk.com/novue_rock_albomu_2013', 'format' => "\n"),
@@ -416,7 +420,7 @@ class RockBot {
         $audio_channel_id = $this->chat_id;
         $post_channel_id = $this->chat_id;
         $post['is_post'] = false;
-        if ($text == '/post' || !empty($delay_date)) {
+        if (/*$text == '/post' || disable till correct link to audio group*/!empty($delay_date)) {
             $is_post = true;
             $post['is_post'] = true;
             $audio_channel_id = "{$this->audio_channel}";
@@ -427,14 +431,7 @@ class RockBot {
 
         $old_type_album = $post['type_album'];
         if (empty($post['t_me'])) {
-            $audio_msg_id = $this->getPostAudio($post, $audio_channel_id);
-            if (!empty($audio_msg_id)) {
-            	$a_link = str_replace('-100', 'c/', $this->audio_channel);
-                $post['t_me'] = "https://t.me/{$a_link}/{$audio_msg_id}";
-                if ($is_post) {
-                    $this->dbh->exec("UPDATE post set t_me='{$post['t_me']}' where id_post = {$post['id_post']};");
-                }
-            }
+            $this->getPostAudio($post, $audio_channel_id);
         }
 
         if ($old_type_album != $post['type_album']) {
@@ -450,7 +447,7 @@ class RockBot {
 //todo $this->vkPost($post_text, $delay_date);
         //$this->telegram->sendMessage(['chat_id' => $this->chat_id, 'text' => $post_text['post_template'], 'disable_web_page_preview' => true, 'parse_mode' => 'HTML']);
 
-        if ($text != '/post') {
+        //if ($text != '/post') {
             if (!empty($post_text['post_video'])) {
                 $this->telegram->sendMessage([
                     'chat_id' => $this->chat_id,
@@ -466,15 +463,7 @@ class RockBot {
                 'disable_web_page_preview' => (empty($post['media_link'])),
                 'parse_mode' => 'HTML',
             ]);
-            /*if ($reply_markup && empty($post_text['post_video'])) {
-                $this->telegram->sendMessage([
-                    'chat_id' => $this->chat_id,
-                    'text' => $post_text['post_title'],
-                    'reply_markup' => $reply_markup,
-                    'parse_mode' => 'HTML',
-                ]);
-            }*/
-        }
+        //}
         //$this->telegram->sendMessage(['chat_id' => $this->chat_id, 'text' => $post_text['post_vk_template'], 'disable_web_page_preview' => true]);
 
         if ($is_post) {
@@ -1351,12 +1340,15 @@ class RockBot {
         $this->chat_id = $this->result['message']['chat']['id'];
         if ($this->chat_id != self::BOT_CHAT) {
             if (!isset($this->allowed_chats[$this->chat_id])) {
-                $this->telegram->sendMessage(['chat_id' => self::BOT_CHAT, 'text' => "Доступ с левого чата!\n\n" . json_encode($this->result, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE),]);
+                $this->telegram->sendMessage(['chat_id' => self::BOT_CHAT, 'text' => "Доступ с левого чата!\n" . json_encode($this->result, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE),]);
             }// else $this->telegram->sendMessage(['chat_id' => self::BOT_CHAT, 'text' => "Доступ с: {$this->allowed_chats[$this->chat_id]}",]);
 
 			if ($this->chat_id == self::NEW_ROCK_CHAT) {
 				$this->processChatMessage();
 			}
+            if ($this->chat_id == self::AUDIO_CHAT) {
+                $this->processAudioChatMessage();
+            }
             return false;
         }
 
@@ -1380,9 +1372,38 @@ class RockBot {
 		$this->telegram->sendAnyRequest('deleteMessage', ['chat_id' => $this->chat_id, 'message_id' => $this->result['message']['message_id']]);
 	}
 
+    private function processAudioChatMessage()
+    {
+        if (!empty($this->result['message']['left_chat_member'])
+            || !empty($this->result['message']['new_chat_members'])
+            || !empty($this->result['message']['new_chat_member'])
+            || !empty($this->result['message']['new_chat_title'])
+            || !empty($this->result['message']['new_chat_photo'])
+        ) {
+            $this->telegram->sendAnyRequest('deleteMessage', ['chat_id' => $this->chat_id, 'message_id' => $this->result['message']['message_id']]);
+            return;
+        }
+        //777000 - messages automatically forwarded to the discussion group
+        if (empty($this->result['message']['from']['id']) || $this->result['message']['from']['id'] != 777000
+            || empty($this->result['message']['forward_from_message_id'])
+        ) {
+            return;
+        }
+        $post = $this->dbh->query("SELECT id_post from post WHERE msg_audio_id={$this->result['message']['forward_from_message_id']} LIMIT 1;", PDO::FETCH_ASSOC)->fetch();
+        if (empty($post['id_post'])) {
+            return;
+        }
+        $a_link = self::AUDIO_CHAT_NAME;
+        $new_link = "https://t.me/{$a_link}/{$this->result['message']['message_id']}";;
+        $this->dbh->exec("UPDATE post set t_me='$new_link' where id_post = {$post['id_post']};");
+
+        $r = $this->telegram->sendMessage(['chat_id' => self::BOT_CHAT, 'text' => 'Updated audio link']);
+    }
+
     private function getPostAudio(&$postData, $audio_channel_id)
     {
         $audio_msg_id = 0;
+        $a_link = 'https://t.me/' . str_replace('-100', 'c/', $this->audio_channel) . '/';
         $audios = $this->dbh->query("SELECT * from audio WHERE post_id='{$postData['id_post']}' ORDER BY id_message;", PDO::FETCH_ASSOC)->fetchAll();
         if (!empty($audios)) {
             $caption = '@rock_albums';
@@ -1410,6 +1431,10 @@ class RockBot {
                     ]);
                 }
                 $audio_msg_id = $r['message_id'];
+                $postData['t_me'] = "{$a_link}{$audio_msg_id}";
+                if ($postData['is_post']) {
+                    $this->dbh->exec("UPDATE post set t_me='{$postData['t_me']}', msg_audio_id=$audio_msg_id where id_post = {$postData['id_post']};");
+                }
             } else {
                 $caption = "{$postData['type_album']} {$postData['hashtag']} @rock_albums";
             }
@@ -1457,6 +1482,10 @@ class RockBot {
                         } elseif (!empty($r['message_id'])) {
                             $audio_msg_id = $r['message_id'];
                         }
+                        $postData['t_me'] = "{$a_link}{$audio_msg_id}";
+                        if ($postData['is_post']) {
+                            $this->dbh->exec("UPDATE post set t_me='{$postData['t_me']}', msg_audio_id=$audio_msg_id where id_post = {$postData['id_post']};");
+                        }
                     }
                 }
                 if ($cAudios > 2) {
@@ -1489,6 +1518,10 @@ class RockBot {
 
                     if (empty($audio_msg_id)) {
                         $audio_msg_id = $r['message_id'];
+                        $postData['t_me'] = "{$a_link}{$audio_msg_id}";
+                        if ($postData['is_post']) {
+                            $this->dbh->exec("UPDATE post set t_me='{$postData['t_me']}', msg_audio_id=$audio_msg_id where id_post = {$postData['id_post']};");
+                        }
                     }
                     $i++;
                     if ($i > 5) {
