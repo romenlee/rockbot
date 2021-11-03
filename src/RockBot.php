@@ -876,7 +876,7 @@ class RockBot {
                 }
             }
             if ($tagStartPos) {
-                $tag = mb_strtolower(trim(mb_substr($text, $tagStartPos, $tagLength)));
+                $tag = trim(mb_substr($text, $tagStartPos, $tagLength));
                 $tags = explode('#', $tag);
                 $tag = '';
                 foreach ($tags as $t) {
