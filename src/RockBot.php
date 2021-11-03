@@ -1101,7 +1101,7 @@ class RockBot {
         }
         $post = $this->currentPost;
         $audios = $this->dbh->query("SELECT id_audio, artist, title, file, id_message from audio WHERE post_id={$post['id_post']} ORDER BY id_message;", PDO::FETCH_ASSOC)->fetchAll();
-        if (empty($audios) || count($audios) > 9) {
+        if (empty($audios) || count($audios) > $this->settings['vk_audio_upload_limit']) {
             return false;
         }
 
