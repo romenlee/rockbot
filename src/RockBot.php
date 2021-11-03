@@ -12,14 +12,12 @@ use InstaLite\InstaLite;
 
 class RockBot {
 
-    const TOKEN = '1194011134:AAGHpeLzK0PAOe1tgoitznj9hAkcEpi13to';
     const BOT_CHAT = 114082814;
     const NEW_ROCK_CHAT = -1001173139890;
     //const NEW_ROCK_CHAT = -1001455135875;
     const AUDIO_CHAT = -1001655871229;
     const AUDIO_CHAT_NAME = 'alternative_rock_metal';
     const VERSION_VK = '5.101';
-    const TOKEN_VK = 'da0bdc3605b959d9dd58bfff14b3e59a3600ff0d914ab6c17bb0a056801436105b9cd03c780e7cc9584ad';
     const GROUP_ID_VK = '48186614';//13109196
 
     private $fp;
@@ -52,6 +50,7 @@ class RockBot {
     );
     private $reply_likes;
     private $currentPost;
+    private $settings;
     //private $parser_link = 'https://newrockbot.herokuapp.com/';
     private $parser_link = 'http://167.71.12.148/';
     private $likes = [
@@ -102,13 +101,33 @@ class RockBot {
         $this->date = date('Y-m-d H:i:s');
         $this->y = date('Y');
         $this->reply_likes = json_encode(['inline_keyboard' => $this->likes]);
-        if ($type === 'cron') {
-            $this->executeCron();
-        } elseif ($type === 'save_links') {
-            $this->saveLinks();
-        } else {
-            $this->execute();
-        }
+		try {
+			$pdo_opt = array(PDO::ATTR_PERSISTENT => true, PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION);
+			$this->dbh = new PDO('mysql:host=pixis.mysql.tools;dbname=pixis_rockbot;charset=utf8', 'pixis_rockbot', '1&sV08S@tt', $pdo_opt);
+			$this->settings = $this->dbh->query('SELECT * from settings LIMIT 1;', PDO::FETCH_ASSOC)->fetch();
+			if ($type === 'cron') {
+				$this->executeCron();
+			} elseif ($type === 'save_links') {
+				$this->saveLinks();
+			} else {
+				$this->execute();
+			}
+		} catch (TelegramSDKException $e) {
+			$error_msg = $e->getMessage() . "\nFile: " . $e->getFile() . " Line: " . $e->getLine() . "\nTrace:\n" . $e->getTraceAsString() . "\n";
+			if (!empty($this->result)) {
+				$error_msg .= json_encode($this->result, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
+			} else {
+				$error_msg .= 'Result is empty';
+			}
+			if (!empty($this->telegram)) {
+				$this->telegram->sendMessage(['chat_id' => self::BOT_CHAT, 'text' => $error_msg]);
+			}
+		} catch (PDOException $e) {
+			$text = "PDO error:\n" .$e->getMessage() . "\nFile: " . $e->getFile() . " Line: " . $e->getLine() . "\nTrace:\n" . $e->getTraceAsString() . "\n";
+			if (!empty($this->telegram)) {
+				$this->telegram->sendMessage(['chat_id' => self::BOT_CHAT, 'text' => $text]);
+			}
+		}
         $this->dbh = null;
         if (!empty($this->fp)) {
             //fwrite($this->fp, "\n");
@@ -118,42 +137,26 @@ class RockBot {
 
     private function execute()
     {
+		$this->telegram = new MyApi($this->settings['telegram_token']);
+		$this->result = $this->telegram->getWebhookUpdates();
 
-        try {
-            $this->telegram = new MyApi(self::TOKEN);
-            $this->result = $this->telegram->getWebhookUpdates();
+		if (!$this->checkUpdates()) {
+			return;
+		}
 
-            if (!$this->checkUpdates()) {
-                return;
-            }
-
-            $pdo_opt = array(PDO::ATTR_PERSISTENT => true, PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION);
-            $this->dbh = new PDO('mysql:host=pixis.mysql.tools;dbname=pixis_rockbot;charset=utf8', 'pixis_rockbot', '1&sV08S@tt', $pdo_opt);
-            if ($this->checkCallback()) {
-                return;
-            }
-            if (!$this->checkMessage()) {
-                return;
-            }
-            if ($this->processMessage()) {
-                return;
-            }
-            if ($this->processAudio()) {
-                return;
-            }
-            $this->processPhoto();
-        } catch (TelegramSDKException $e) {
-            $error_msg = $e->getMessage() . "\nFile: " . $e->getFile() . " Line: " . $e->getLine() . "\nTrace:\n" . $e->getTraceAsString() . "\n";
-            if (!empty($this->result)) {
-                $error_msg .= json_encode($this->result, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
-            } else {
-                $error_msg .= 'Result is empty';
-            }
-            $this->telegram->sendMessage(['chat_id' => self::BOT_CHAT, 'text' => $error_msg]);
-        } catch (PDOException $e) {
-			$text = "PDO error:\n" .$e->getMessage() . "\nFile: " . $e->getFile() . " Line: " . $e->getLine() . "\nTrace:\n" . $e->getTraceAsString() . "\n";
-            $this->telegram->sendMessage(['chat_id' => self::BOT_CHAT, 'text' => $text]);
-        }
+		if ($this->checkCallback()) {
+			return;
+		}
+		if (!$this->checkMessage()) {
+			return;
+		}
+		if ($this->processMessage()) {
+			return;
+		}
+		if ($this->processAudio()) {
+			return;
+		}
+		$this->processPhoto();
     }
 
     private function processMessage() {
@@ -467,15 +470,14 @@ class RockBot {
         //$this->telegram->sendMessage(['chat_id' => $this->chat_id, 'text' => $post_text['post_vk_template'], 'disable_web_page_preview' => true]);
 
         if ($is_post) {
-            $settings = $this->dbh->query('SELECT * from settings LIMIT 1;', PDO::FETCH_ASSOC)->fetch();
-			if (empty($post['media_link']) && !empty($settings['forbid_post_without_image'])) {
+			if (empty($post['media_link']) && !empty($this->settings['forbid_post_without_image'])) {
 				$this->telegram->sendMessage(['chat_id' => $this->chat_id, 'text' => 'THERE IS NO IMAGE OR VIDEO!!!']);
 				return;
 			}
-            if (!empty($settings['vk_api_enabled']) && !$post['is_edit']) {
+            if (!empty($this->settings['vk_api_enabled']) && !$post['is_edit']) {
                 $this->vkPost($post_text, $delay_date);
             }
-			/*if (!empty($settings['instagram_api_enabled']) && !$post['is_edit']) {
+			/*if (!empty($this->settings['instagram_api_enabled']) && !$post['is_edit']) {
 				$this->instaPost($post_text, $delay_date);
 			}*/
             if (empty($delay_date)) {
@@ -523,11 +525,12 @@ class RockBot {
             'from_group' => 1,
             'message' => $text['post_vk_api'],
         );
+        $vk_token = $this->settings['vk_token'];
         if (strpos($this->currentPost['media_link'], "//{$_SERVER['HTTP_HOST']}/img/")) {
-            $photo_server = $this->vk->photos()->getWallUploadServer(self::TOKEN_VK);
+            $photo_server = $this->vk->photos()->getWallUploadServer($vk_token);
             $photo_path = ltrim(parse_url($this->currentPost['media_link'], PHP_URL_PATH), '/');
             $photo_upload = $this->vk->getRequest()->upload($photo_server['upload_url'], 'photo', $photo_path);
-            $save_photo = $this->vk->photos()->saveWallPhoto(self::TOKEN_VK, array(
+            $save_photo = $this->vk->photos()->saveWallPhoto($vk_token, array(
                 'server' => $photo_upload['server'],
                 'photo' => $photo_upload['photo'],
                 'hash' => $photo_upload['hash'],
@@ -536,7 +539,7 @@ class RockBot {
                 $vk_params['attachments'] = "photo{$save_photo[0]['owner_id']}_{$save_photo[0]['id']}";
             }
         } elseif (strpos($this->currentPost['media_link'], 'youtube.com/watch')) {
-            $save_video = $this->vk->video()->save(self::TOKEN_VK, array(
+            $save_video = $this->vk->video()->save($vk_token, array(
                 'group_id' => self::GROUP_ID_VK,
                 'wallpost' => 0,
                 'link' => $this->currentPost['media_link'],
@@ -572,7 +575,7 @@ class RockBot {
             }
             $vk_params['publish_date'] = $publish_date;
         }
-        $post = $this->vk->wall()->post(self::TOKEN_VK, $vk_params);
+        $post = $this->vk->wall()->post($vk_token, $vk_params);
 
         if (!empty($post)) {
             if (!empty($vk_params['publish_date'])) {
@@ -586,7 +589,7 @@ class RockBot {
         }
 
         if (!empty($text['post_vk_api_video'])) {
-            $save_video = $this->vk->video()->save(self::TOKEN_VK, array(
+            $save_video = $this->vk->video()->save($vk_token, array(
                 'group_id' => self::GROUP_ID_VK,
                 'wallpost' => 0,
                 'link' => $this->currentPost['video_link'],
@@ -602,7 +605,7 @@ class RockBot {
             if (!empty($save_video['owner_id']) && !empty($save_video['video_id']) && !empty($video_post['response'])) {
                 $vk_params['attachments'] = "video{$save_video['owner_id']}_{$save_video['video_id']}";
             }
-            $post = $this->vk->wall()->post(self::TOKEN_VK, $vk_params);
+            $post = $this->vk->wall()->post($vk_token, $vk_params);
             if (!empty($post)) {
                 $human_date = date('G:i j F Y', $vk_params['publish_date']);
                 $this->telegram->sendMessage(['chat_id' => $this->chat_id, 'text' => "VK VIDEO post is at <b>$human_date</b>", 'parse_mode' => 'HTML']);
@@ -615,7 +618,7 @@ class RockBot {
     private function uploadVkAudios()
     {
         $ret = array();
-        $a = "https://api.vk.com/method/audio.getUploadServer?&access_token=" . self::TOKEN_VK . "&v=" . self::VERSION_VK;
+        $a = "https://api.vk.com/method/audio.getUploadServer?&access_token={$this->settings['vk_token']}&v=" . self::VERSION_VK;
         $uploadAudioServer = json_decode(file_get_contents($a), true);
 
         if (empty($uploadAudioServer) || empty($uploadAudioServer['response']['upload_url'])) {
@@ -645,7 +648,7 @@ class RockBot {
                 'audio' => $audioUpload['audio'],
                 'hash' => $audioUpload['hash'],
                 'v' => self::VERSION_VK,
-                'access_token' => self::TOKEN_VK,
+                'access_token' => $this->settings['vk_token'],
             );
             $audioName = explode('--', $file);
             if (!empty($audioName[1])) {
@@ -814,7 +817,6 @@ class RockBot {
     {
         $albumStartPos = mb_strpos($text, ' - ');
         if ($albumStartPos) {
-            $settings = $this->dbh->query('SELECT * from settings LIMIT 1;', PDO::FETCH_ASSOC)->fetch();
             $artistLength = null;
             $symbols_tag_replace = array(' ', '#', '  ', '-', '&', "'", '"', '/', '__');
             $tag = '';
@@ -999,7 +1001,7 @@ class RockBot {
                 $parser_link = $this->parser_link . 'find/' . rawurlencode($artist) . '/' . rawurlencode($album);
                 $parser_link2 = $this->parser_link . 'find/' . rawurlencode($artist) . '/' . rawurlencode($album) . '?callback=1';
                 $this->telegram->sendMessage(['chat_id' => $this->chat_id, 'text' => "{$parser_link}\n\n{$parser_link2}\nWait a minute for response\n/parse_links", 'disable_web_page_preview' => true]);
-                if (!empty($settings['parser_enabled'])) {
+                if (!empty($this->settings['parser_enabled'])) {
                     $callParser = curl_init();
                     curl_setopt($callParser, CURLOPT_URL, $parser_link2);
                     curl_setopt($callParser, CURLOPT_TIMEOUT, 1);
@@ -1105,7 +1107,7 @@ class RockBot {
 
         foreach ($audios as $audio) {
             $file = $this->telegram->getFile(['file_id' =>$audio['file']]);
-            $file_from_tgrm = "https://api.telegram.org/file/bot".self::TOKEN."/".$file['file_path'];
+            $file_from_tgrm = "https://api.telegram.org/file/bot{$this->settings['telegram_token']}/{$file['file_path']}";
             $ext_arr = explode(".", $file['file_path']);
             $ext = end($ext_arr);
             $name_our_new_file =  "{$audio['id_message']}--{$audio['artist']}--{$audio['title']}--";
@@ -1156,7 +1158,7 @@ class RockBot {
         }
         $photo = $this->result['message']['photo'];
         $file = $this->telegram->getFile(['file_id' =>$photo[count($photo) - 1]['file_id']]);
-        $file_from_tgrm = "https://api.telegram.org/file/bot".self::TOKEN."/".$file['file_path'];
+        $file_from_tgrm = "https://api.telegram.org/file/bot{$this->settings['telegram_token']}/{$file['file_path']}";
         // достаем расширение файла
         $ext_arr = explode(".", $file['file_path']);
         $ext = end($ext_arr);
@@ -1709,10 +1711,9 @@ class RockBot {
             ]);
         }
     }
+
     private function executeCron()
     {
-        $pdo_opt = array(PDO::ATTR_PERSISTENT => true, PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION);
-        $this->dbh = new PDO('mysql:host=pixis.mysql.tools;dbname=pixis_rockbot;charset=utf8', 'pixis_rockbot', '1&sV08S@tt', $pdo_opt);
         $res = $this->dbh->query("SELECT * from post WHERE posted_date < '{$this->date}' AND posted=0 AND finished=1 ORDER BY posted_date,id_post;", PDO::FETCH_ASSOC)->fetchAll();
         $ready_posts = array();
         foreach ($res as $post) {
@@ -1737,42 +1738,34 @@ class RockBot {
 
         $this->fp = fopen('log.txt', 'at');
         fwrite($this->fp, "{$this->date} cron ");
-        try {
-            $this->telegram = new MyApi(self::TOKEN);
-            foreach ($ready_posts as $id_post => $post_ready_text) {
-                if (!empty($post_ready_text['video'])) {
-                    $this->telegram->sendMessage([
-                        'chat_id' => "@{$this->post_channel}",
-                        'text' => $post_ready_text['video'],
-                        'parse_mode' => 'HTML',
-                        //'reply_markup' => ($post_ready_text['likes']) ? $this->reply_likes : null,
-                    ]);
-                }
-                $r = $this->telegram->sendMessage([
-                    'chat_id' => "@{$this->post_channel}",
-                    'text' => $post_ready_text['text'],
-                    //'reply_markup' => ($post_ready_text['likes']) ? $this->reply_likes : null,
-                    'disable_web_page_preview' => $post_ready_text['disable_preview'],
-                    'parse_mode' => 'HTML',
-                ]);
-                if ($post_ready_text['likes'] && !empty($post_ready_text['title'])/* && empty($post_ready_text['video'])*/) {
-                    $this->telegram->sendMessage([
-                        'chat_id' => "@{$this->post_channel}",
-                        'text' => $post_ready_text['title'],
-                        'reply_markup' => $this->reply_likes,
-                        'parse_mode' => 'HTML',
-                    ]);
-                }
-                $this->dbh->exec("UPDATE post set posted=1 where id_post = {$id_post};");
-                fwrite($this->fp, $r . "\n");
-            }
-        } catch (TelegramSDKException $e) {
-            $text = $e->getMessage() . "\nFile: " . $e->getFile() . " Line: " . $e->getLine() . "\nTrace:\n" . $e->getTraceAsString() . "\n";
-            $this->telegram->sendMessage(['chat_id' => self::BOT_CHAT, 'text' => $text]);
-        } catch (PDOException $e) {
-			$text = "PDO error:\n" .$e->getMessage() . "\nFile: " . $e->getFile() . " Line: " . $e->getLine() . "\nTrace:\n" . $e->getTraceAsString() . "\n";
-            $this->telegram->sendMessage(['chat_id' => self::BOT_CHAT, 'text' => $text]);
-        }
+		$this->telegram = new MyApi($this->settings['telegram_token']);
+		foreach ($ready_posts as $id_post => $post_ready_text) {
+			if (!empty($post_ready_text['video'])) {
+				$this->telegram->sendMessage([
+					'chat_id' => "@{$this->post_channel}",
+					'text' => $post_ready_text['video'],
+					'parse_mode' => 'HTML',
+					//'reply_markup' => ($post_ready_text['likes']) ? $this->reply_likes : null,
+				]);
+			}
+			$r = $this->telegram->sendMessage([
+				'chat_id' => "@{$this->post_channel}",
+				'text' => $post_ready_text['text'],
+				//'reply_markup' => ($post_ready_text['likes']) ? $this->reply_likes : null,
+				'disable_web_page_preview' => $post_ready_text['disable_preview'],
+				'parse_mode' => 'HTML',
+			]);
+			if ($post_ready_text['likes'] && !empty($post_ready_text['title'])/* && empty($post_ready_text['video'])*/) {
+				$this->telegram->sendMessage([
+					'chat_id' => "@{$this->post_channel}",
+					'text' => $post_ready_text['title'],
+					'reply_markup' => $this->reply_likes,
+					'parse_mode' => 'HTML',
+				]);
+			}
+			$this->dbh->exec("UPDATE post set posted=1 where id_post = {$id_post};");
+			fwrite($this->fp, $r . "\n");
+		}
     }
 
     private function saveLinks()
@@ -1784,8 +1777,6 @@ class RockBot {
         if (empty($results) || empty($results['group']) || empty($results['album']) || empty($results['results'])) {
             return;
         }
-        $pdo_opt = array(PDO::ATTR_PERSISTENT => true, PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION);
-        $this->dbh = new PDO('mysql:host=pixis.mysql.tools;dbname=pixis_rockbot;charset=utf8', 'pixis_rockbot', '1&sV08S@tt', $pdo_opt);
         $post = $this->dbh->query("SELECT * from post WHERE finished=0;", PDO::FETCH_ASSOC)->fetch();
         if (empty($post['artist'])) {
             return;
@@ -1801,16 +1792,8 @@ class RockBot {
 
         $this->currentPost = $post;
         $this->chat_id = self::BOT_CHAT;
-        try {
-            $this->telegram = new MyApi(self::TOKEN);
-            $this->parseLinks($results['results']);
-        } catch (TelegramSDKException $e) {
-            $text = $e->getMessage() . "\nFile: " . $e->getFile() . " Line: " . $e->getLine() . "\nTrace:\n" . $e->getTraceAsString() . "\n";
-            $this->telegram->sendMessage(['chat_id' => self::BOT_CHAT, 'text' => $text]);
-        } catch (PDOException $e) {
-			$text = "PDO error:\n" .$e->getMessage() . "\nFile: " . $e->getFile() . " Line: " . $e->getLine() . "\nTrace:\n" . $e->getTraceAsString() . "\n";
-            $this->telegram->sendMessage(['chat_id' => self::BOT_CHAT, 'text' => $text]);
-        }
+		$this->telegram = new MyApi($this->settings['telegram_token']);
+		$this->parseLinks($results['results']);
     }
 
 }
