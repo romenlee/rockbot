@@ -27,12 +27,13 @@ function prd($content, $htmlentities = FALSE) {
 
 echo date('H:i:s');
 $date = date('H:i:s');
-//phpinfo();
-use InstaLite\InstaLite;
+return;
+phpinfo();
+/*use InstaLite\InstaLite;
 $instagram = new InstaLite("new_rock_albums", "netpeak05912");//Derparol05912
-prn($instagram);
+prn($instagram);*/
 //prn($instagram->uploadPhoto('img/1588757590.jpg', 'text #hashtag'));
-die;
+//die;
 $pdo_opt = array(
     PDO::ATTR_PERSISTENT => true,
 );

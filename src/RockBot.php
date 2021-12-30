@@ -526,6 +526,7 @@ class RockBot {
             'message' => $text['post_vk_api'],
         );
         $vk_token = $this->settings['vk_token'];
+        $is_link = false;
         if (strpos($this->currentPost['media_link'], "//{$_SERVER['HTTP_HOST']}/img/")) {
             $photo_server = $this->vk->photos()->getWallUploadServer($vk_token);
             $photo_path = ltrim(parse_url($this->currentPost['media_link'], PHP_URL_PATH), '/');
@@ -537,6 +538,7 @@ class RockBot {
             ));
             if (!empty($save_photo[0]['owner_id']) && !empty($save_photo[0]['id'])) {
                 $vk_params['attachments'] = "photo{$save_photo[0]['owner_id']}_{$save_photo[0]['id']}";
+                $is_link = true;
             }
         } elseif (strpos($this->currentPost['media_link'], 'youtube.com/watch')) {
             $save_video = $this->vk->video()->save($vk_token, array(
@@ -561,6 +563,8 @@ class RockBot {
             if (!empty($audiosVk)) {
                 $vk_params['attachments'] .=  ',' . implode(',', $audiosVk);
             }
+        } elseif ($is_link) {
+            $vk_params['attachments'] .= ',https://t.me/rock_albums';
         }
 
         $publish_date = time();
