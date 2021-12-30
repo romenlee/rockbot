@@ -443,10 +443,10 @@ class RockBot {
 
         $post_text = $this->getPostText($post);
 
-        $reply_markup = null;
+        /*$reply_markup = null;
         if (!$post['no_likes']) {
             $reply_markup = $this->reply_likes;
-        }
+        }*/
 //todo $this->vkPost($post_text, $delay_date);
         //$this->telegram->sendMessage(['chat_id' => $this->chat_id, 'text' => $post_text['post_template'], 'disable_web_page_preview' => true, 'parse_mode' => 'HTML']);
 
@@ -462,7 +462,7 @@ class RockBot {
             $this->telegram->sendMessage([
                 'chat_id' => $this->chat_id,
                 'text' => $post_text['post_text'],
-                'reply_markup' => $reply_markup,
+                //'reply_markup' => $reply_markup,
                 'disable_web_page_preview' => (empty($post['media_link'])),
                 'parse_mode' => 'HTML',
             ]);
@@ -496,14 +496,14 @@ class RockBot {
                     'disable_web_page_preview' => (empty($post['media_link'])),
                     'parse_mode' => 'HTML',
                 ]);
-                if ($reply_markup/* && empty($post_text['post_video'])*/) {
+                /*if ($reply_markup) {
                     $this->telegram->sendMessage([
                         'chat_id' => $post_channel_id,
                         'text' => $post_text['post_title'],
                         'reply_markup' => $reply_markup,
                         'parse_mode' => 'HTML',
                     ]);
-                }
+                }*/
                 $posted_date = $this->date;
                 $posted = 1;
             } else {
@@ -1702,17 +1702,17 @@ class RockBot {
                 $this->telegram->sendMessage([
                     'chat_id' => $this->chat_id,
                     'text' => '(Video for the next post) ' . $txt . $post_ready_text['video'],
-                    'reply_markup' => ($post_ready_text['likes']) ? $this->reply_likes : null,
+                    //'reply_markup' => ($post_ready_text['likes']) ? $this->reply_likes : null,
                     'parse_mode' => 'HTML',
                 ]);
             }
-            $this->telegram->sendMessage([
+            /*$this->telegram->sendMessage([
                 'chat_id' => $this->chat_id,
                 'text' => $txt . $post_ready_text['text'],
                 'reply_markup' => ($post_ready_text['likes'] && empty($post_ready_text['video'])) ? $this->reply_likes : null,
                 'disable_web_page_preview' => $post_ready_text['disable_preview'],
                 'parse_mode' => 'HTML',
-            ]);
+            ]);*/
         }
     }
 
@@ -1759,14 +1759,14 @@ class RockBot {
 				'disable_web_page_preview' => $post_ready_text['disable_preview'],
 				'parse_mode' => 'HTML',
 			]);
-			if ($post_ready_text['likes'] && !empty($post_ready_text['title'])/* && empty($post_ready_text['video'])*/) {
+			/*if ($post_ready_text['likes'] && !empty($post_ready_text['title'])) {
 				$this->telegram->sendMessage([
 					'chat_id' => "@{$this->post_channel}",
 					'text' => $post_ready_text['title'],
 					'reply_markup' => $this->reply_likes,
 					'parse_mode' => 'HTML',
 				]);
-			}
+			}*/
 			$this->dbh->exec("UPDATE post set posted=1 where id_post = {$id_post};");
 			fwrite($this->fp, $r . "\n");
 		}
