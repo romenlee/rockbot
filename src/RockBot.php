@@ -718,7 +718,7 @@ class RockBot {
         $year = "20" . $year;
 
         $parsed_date = "$day.$month.$year $hour:$minute";
-        if (!is_numeric($hour) || intval($hour) > 23 || intval($minute) > 59 || intval($day) > 31 || intval($month) > 12 || empty($month) || intval($year) > 2021 || strtotime($parsed_date) == FALSE) {
+        if (!is_numeric($hour) || intval($hour) > 23 || intval($minute) > 59 || intval($day) > 31 || intval($month) > 12 || empty($month) || strtotime($parsed_date) == FALSE) {
             $this->telegram->sendMessage(['chat_id' => $this->chat_id, 'text' => "Incorrect time: $parsed_date"]);
         } else {
             $parsed_time = strtotime($parsed_date);
