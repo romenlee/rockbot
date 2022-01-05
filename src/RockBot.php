@@ -48,24 +48,10 @@ class RockBot {
         '-1001655871229' => 'audio chat',//audio files channel
         '-1001348573922' => 'Канал Новые рок альбомы и клипы',//Канал Новые рок альбомы и клипы
     );
-    private $reply_likes;
     private $currentPost;
     private $settings;
     //private $parser_link = 'https://newrockbot.herokuapp.com/';
     private $parser_link = 'http://167.71.12.148/';
-    private $likes = [
-        [
-            [
-                'text' => '🤘',
-                'callback_data'=>'{"action":"rock","count":0,"text":"🤘"}'
-            ],
-            [
-                'text' => '👎',
-                'callback_data'=>'{"action":"dislike","count":0,"text":"👎"}'
-                //'url' => 'https://tlgrm.ru/docs/bots/api#inlinekeyboardmarkup',
-            ],
-        ],
-    ];
     private $music_resources = array(
         't.me' => array('name' => "🎸 СЛУШАТЬ ⏯", 'db_field' => 't_me', 'format' => "   "),
         'chat' => array('name' => "Chat", 'link' => 'https://t.me/rock_chat', 'format' => "\n\n"),
@@ -74,7 +60,6 @@ class RockBot {
         'vk.com' => array('name' => 'VK', 'link' => 'https://vk.com/novue_rock_albomu_2013', 'format' => "\n"),
         'music.youtube' => array('name' => 'YouTube music', 'db_field' => 'music_youtube', 'parser_name' => 'youtube', 'format' => " ♪ "),
         'music.yandex' => array('name' => 'Yandex music', 'db_field' => 'music_yandex', 'parser_name' => 'yandex', 'image' => 3, 'format' => "\n", 'default' => 'https://music.yandex.ru/search?text={search_text}&type=albums'),
-        //'play.google' => array('name' => 'Google', 'db_field' => 'play_google', /*'parser_name' => 'google',*/ 'format' => " ♪ "),
         'deezer.com' => array('name' => 'Deezer', 'db_field' => 'deezer', 'parser_name' =>'deezer', 'image' => 2, 'format' => " ♪ "),
         'last.fm' => array('name' => 'last.fm', 'db_field' => 'last_fm', 'parser_name' => 'lastfm', 'format' => " ♪ ", 'default' => 'https://www.last.fm/search?q={search_text}'),
         'soundcloud.com' => array('name' => 'Soundcloud', 'db_field' => 'soundcloud', 'parser_name' => 'soundcloud', 'format' => " ♪ ", 'default' => 'https://soundcloud.com/search?q={search_text}'),
@@ -100,7 +85,6 @@ class RockBot {
     public function __construct($type = '') {
         $this->date = date('Y-m-d H:i:s');
         $this->y = date('Y');
-        $this->reply_likes = json_encode(['inline_keyboard' => $this->likes]);
 		try {
 			$pdo_opt = array(PDO::ATTR_PERSISTENT => true, PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION);
 			$this->dbh = new PDO('mysql:host=pixis.mysql.tools;dbname=pixis_rockbot;charset=utf8', 'pixis_rockbot', '1&sV08S@tt', $pdo_opt);
@@ -168,8 +152,6 @@ class RockBot {
 
         if ($text == '/start') {
             $this->startCommand();
-        } elseif ($text == '/her') {
-            $this->telegram->sendMessage(['chat_id' => $this->chat_id, 'text' => $this->getParsedData()]);
         } elseif ($text == '/delayed') {
             $this->getDelayedPosts();
         } elseif ($text == '/parser_on') {
@@ -209,12 +191,6 @@ class RockBot {
                 $is_delay = (!empty($is_delay));
                 $matches = $matches ?? array();
                 $this->postCommand($text, $matches, $is_delay);
-            } elseif ($text == '/nolikes') {
-                $this->dbh->exec("UPDATE post set no_likes = 1 where finished = 0;");
-                $this->telegram->sendMessage(['chat_id' => $this->chat_id, 'text' => 'No Likes']);
-            } elseif ($text == '/likes') {
-                $this->dbh->exec("UPDATE post set no_likes = 0 where finished = 0;");
-                $this->telegram->sendMessage(['chat_id' => $this->chat_id, 'text' => 'Added Likes']);
             } elseif ($text == '/camel_artist') {
                 $camelArtist = mb_convert_case($this->currentPost['artist'], MB_CASE_TITLE);
                 $this->dbh->exec("UPDATE post set artist = '{$camelArtist}' where finished = 0;");
@@ -443,10 +419,6 @@ class RockBot {
 
         $post_text = $this->getPostText($post);
 
-        /*$reply_markup = null;
-        if (!$post['no_likes']) {
-            $reply_markup = $this->reply_likes;
-        }*/
 //todo $this->vkPost($post_text, $delay_date);
         //$this->telegram->sendMessage(['chat_id' => $this->chat_id, 'text' => $post_text['post_template'], 'disable_web_page_preview' => true, 'parse_mode' => 'HTML']);
 
@@ -455,14 +427,12 @@ class RockBot {
                 $this->telegram->sendMessage([
                     'chat_id' => $this->chat_id,
                     'text' => $post_text['post_video'],
-                    //'reply_markup' => $reply_markup,
                     'parse_mode' => 'HTML',
                 ]);
             }
             $this->telegram->sendMessage([
                 'chat_id' => $this->chat_id,
                 'text' => $post_text['post_text'],
-                //'reply_markup' => $reply_markup,
                 'disable_web_page_preview' => (empty($post['media_link'])),
                 'parse_mode' => 'HTML',
             ]);
@@ -485,25 +455,15 @@ class RockBot {
                     $this->telegram->sendMessage([
                         'chat_id' => $post_channel_id,
                         'text' => $post_text['post_video'],
-                        //'reply_markup' => $reply_markup,
                         'parse_mode' => 'HTML',
                     ]);
                 }
                 $this->telegram->sendMessage([
                     'chat_id' => $post_channel_id,
                     'text' => $post_text['post_text'],
-                    //'reply_markup' => $reply_markup,
                     'disable_web_page_preview' => (empty($post['media_link'])),
                     'parse_mode' => 'HTML',
                 ]);
-                /*if ($reply_markup) {
-                    $this->telegram->sendMessage([
-                        'chat_id' => $post_channel_id,
-                        'text' => $post_text['post_title'],
-                        'reply_markup' => $reply_markup,
-                        'parse_mode' => 'HTML',
-                    ]);
-                }*/
                 $posted_date = $this->date;
                 $posted = 1;
             } else {
@@ -1683,7 +1643,6 @@ class RockBot {
                 'text' => $post_text['post_text'],
                 'date' => date('G:i j F Y', strtotime($post['posted_date'])),
                 'id' => $post['id_post'],
-                'likes' => (empty($post['no_likes'])),
                 'disable_preview' => (empty($post['media_link'])),
             );
             if (!empty($post_text['post_video'])) {
@@ -1702,17 +1661,9 @@ class RockBot {
                 $this->telegram->sendMessage([
                     'chat_id' => $this->chat_id,
                     'text' => '(Video for the next post) ' . $txt . $post_ready_text['video'],
-                    //'reply_markup' => ($post_ready_text['likes']) ? $this->reply_likes : null,
                     'parse_mode' => 'HTML',
                 ]);
             }
-            /*$this->telegram->sendMessage([
-                'chat_id' => $this->chat_id,
-                'text' => $txt . $post_ready_text['text'],
-                'reply_markup' => ($post_ready_text['likes'] && empty($post_ready_text['video'])) ? $this->reply_likes : null,
-                'disable_web_page_preview' => $post_ready_text['disable_preview'],
-                'parse_mode' => 'HTML',
-            ]);*/
         }
     }
 
@@ -1727,7 +1678,6 @@ class RockBot {
             $post_text = $this->getPostText($post);
             $ready_posts[$post['id_post']] = array(
                 'text' => $post_text['post_text'],
-                'likes' => (empty($post['no_likes'])),
                 'disable_preview' => (empty($post['media_link'])),
                 'title' => $post_text['post_title'],
             );
@@ -1749,24 +1699,14 @@ class RockBot {
 					'chat_id' => "@{$this->post_channel}",
 					'text' => $post_ready_text['video'],
 					'parse_mode' => 'HTML',
-					//'reply_markup' => ($post_ready_text['likes']) ? $this->reply_likes : null,
 				]);
 			}
 			$r = $this->telegram->sendMessage([
 				'chat_id' => "@{$this->post_channel}",
 				'text' => $post_ready_text['text'],
-				//'reply_markup' => ($post_ready_text['likes']) ? $this->reply_likes : null,
 				'disable_web_page_preview' => $post_ready_text['disable_preview'],
 				'parse_mode' => 'HTML',
 			]);
-			/*if ($post_ready_text['likes'] && !empty($post_ready_text['title'])) {
-				$this->telegram->sendMessage([
-					'chat_id' => "@{$this->post_channel}",
-					'text' => $post_ready_text['title'],
-					'reply_markup' => $this->reply_likes,
-					'parse_mode' => 'HTML',
-				]);
-			}*/
 			$this->dbh->exec("UPDATE post set posted=1 where id_post = {$id_post};");
 			fwrite($this->fp, $r . "\n");
 		}
