@@ -1664,6 +1664,12 @@ class RockBot {
                     'parse_mode' => 'HTML',
                 ]);
             }
+            $this->telegram->sendMessage([
+                'chat_id' => $this->chat_id,
+                'text' => $txt . $post_ready_text['text'],
+                'disable_web_page_preview' => $post_ready_text['disable_preview'],
+                'parse_mode' => 'HTML',
+            ]);
         }
     }
 
