@@ -599,7 +599,7 @@ class RockBot {
         foreach ($audioFiles as $file) {
             $ext_arr = explode(".", $file);
             $ext = end($ext_arr);
-            if ($ext != 'mp3') {
+            if ($ext != 'mp3' && $ext != 'mpeg' && $ext != 'mpg') {
                 $this->telegram->sendMessage(['chat_id' => $this->chat_id, 'text' => "{$file} is skipped because of not mp3"]);
                 continue;
             }
