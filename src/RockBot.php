@@ -186,7 +186,16 @@ class RockBot {
             } elseif ($text == '/cancel') {
                 $this->cancelCommand();
             } elseif ($text == '/parse_links') {
-                $this->parseLinks();
+                //$this->parseLinks();
+                $parser_link2 = $this->parser_link . 'find/' . rawurlencode($this->currentPost['artist']) . '/' . rawurlencode($this->currentPost['album']) . '?callback=1&flush=1&q=';
+                foreach ($this->music_resources as $mr) {
+                    if (!empty($mr['db_field']) && empty($this->currentPost[$mr['db_field']]) && !empty($mr['parser_name'])) {
+                        $parser_link2 .= $mr['parser_name'] . ',';
+                    }
+                }
+                $parser_link2 = rtrim($parser_link2, ',');
+                $this->telegram->sendMessage(['chat_id' => $this->chat_id, 'text' => $parser_link2, 'disable_web_page_preview' => true]);
+                $this->backgroundParser($parser_link2);
             } elseif ($text == '/p' || $text == '/post' || ($is_delay = preg_match($time_mask, $text, $matches))) {//post
                 $is_delay = (!empty($is_delay));
                 $matches = $matches ?? array();
@@ -969,12 +978,7 @@ class RockBot {
                 $parser_link2 = $this->parser_link . 'find/' . rawurlencode($artist) . '/' . rawurlencode($album) . '?callback=1&flush=1';
                 $this->telegram->sendMessage(['chat_id' => $this->chat_id, 'text' => "{$parser_link2}\nWait a minute for response\n/parse_links", 'disable_web_page_preview' => true]);
                 if (!empty($this->settings['parser_enabled'])) {
-                    $callParser = curl_init();
-                    curl_setopt($callParser, CURLOPT_URL, $parser_link2);
-                    curl_setopt($callParser, CURLOPT_TIMEOUT, 1);
-                    curl_setopt($callParser, CURLOPT_CONNECTTIMEOUT, 5);
-                    curl_exec($callParser);
-                    curl_close($callParser);
+                    $this->backgroundParser($parser_link2);
                 }
             }
         } else {
@@ -1005,6 +1009,16 @@ class RockBot {
             //fwrite($this->fp, json_encode($r, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE) . "\n");
         }
     }
+
+    private function backgroundParser($link) {
+        $callParser = curl_init();
+        curl_setopt($callParser, CURLOPT_URL, $link);
+        curl_setopt($callParser, CURLOPT_TIMEOUT, 1);
+        curl_setopt($callParser, CURLOPT_CONNECTTIMEOUT, 5);
+        curl_exec($callParser);
+        curl_close($callParser);
+    }
+
     private function startCommand()
     {
         $res = $this->dbh->query('SELECT * from post WHERE finished=0;', PDO::FETCH_ASSOC)->fetch();
