@@ -202,6 +202,10 @@ class RockBot {
             } elseif ($text == '/clear_audio') {
                 $this->dbh->exec("DELETE FROM audio where post_id = {$this->currentPost['id_post']};");
                 $this->telegram->sendMessage(['chat_id' => $this->chat_id, 'text' => 'Current audio is cleared']);
+            } elseif (mb_strpos($text, '/sort ') === 0) {
+                $order = (int) trim(str_replace('/sort ', '', $text));
+                $this->dbh->exec("UPDATE post set sort = $order where finished=0;");
+                $this->telegram->sendMessage(['chat_id' => $this->chat_id, 'text' => 'Sorted']);
             } elseif (mb_strpos($text, '/add ') === 0) {
                 $add_txt = str_replace('/add ', '', $text);
                 if (!empty($add_txt)) {
@@ -962,9 +966,8 @@ class RockBot {
             $this->dbh->exec("UPDATE post set {$upd_str} where finished = 0;");
             $this->telegram->sendMessage(['chat_id' => $this->chat_id, 'parse_mode' => 'HTML', 'text' => $reply['post_template'], 'disable_web_page_preview' => true]);
             if ($is_audio) {
-                $parser_link = $this->parser_link . 'find/' . rawurlencode($artist) . '/' . rawurlencode($album);
-                $parser_link2 = $this->parser_link . 'find/' . rawurlencode($artist) . '/' . rawurlencode($album) . '?callback=1';
-                $this->telegram->sendMessage(['chat_id' => $this->chat_id, 'text' => "{$parser_link}\n\n{$parser_link2}\nWait a minute for response\n/parse_links", 'disable_web_page_preview' => true]);
+                $parser_link2 = $this->parser_link . 'find/' . rawurlencode($artist) . '/' . rawurlencode($album) . '?callback=1&flush=1';
+                $this->telegram->sendMessage(['chat_id' => $this->chat_id, 'text' => "{$parser_link2}\nWait a minute for response\n/parse_links", 'disable_web_page_preview' => true]);
                 if (!empty($this->settings['parser_enabled'])) {
                     $callParser = curl_init();
                     curl_setopt($callParser, CURLOPT_URL, $parser_link2);
@@ -1632,7 +1635,7 @@ class RockBot {
 
     private function getDelayedPosts()
     {
-        $res = $this->dbh->query("SELECT * from post WHERE posted=0 AND finished=1 ORDER BY posted_date,id_post;", PDO::FETCH_ASSOC)->fetchAll();
+        $res = $this->dbh->query("SELECT * from post WHERE posted=0 AND finished=1 ORDER BY posted_date,sort,id_post;", PDO::FETCH_ASSOC)->fetchAll();
         foreach ($res as $post) {
             if (empty($post['artist'])) {
                 continue;
@@ -1675,7 +1678,7 @@ class RockBot {
 
     private function executeCron()
     {
-        $res = $this->dbh->query("SELECT * from post WHERE posted_date < '{$this->date}' AND posted=0 AND finished=1 ORDER BY posted_date,id_post;", PDO::FETCH_ASSOC)->fetchAll();
+        $res = $this->dbh->query("SELECT * from post WHERE posted_date < '{$this->date}' AND posted=0 AND finished=1 ORDER BY posted_date,sort,id_post;", PDO::FETCH_ASSOC)->fetchAll();
         $ready_posts = array();
         foreach ($res as $post) {
             if (empty($post['artist'])) {
