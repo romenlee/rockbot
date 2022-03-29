@@ -93,6 +93,8 @@ class RockBot {
 				$this->executeCron();
 			} elseif ($type === 'save_links') {
 				$this->saveLinks();
+            } elseif ($type === 'insta') {
+                $this->instagram();
 			} else {
 				$this->execute();
 			}
@@ -111,6 +113,11 @@ class RockBot {
 			if (!empty($this->telegram)) {
 				$this->telegram->sendMessage(['chat_id' => self::BOT_CHAT, 'text' => $text]);
 			}
+        } catch (\InstaLite\Exception $e) {
+            $text = "Instagram:\n" .$e->getMessage() . "\nFile: " . $e->getFile() . " Line: " . $e->getLine() . "\nTrace:\n" . $e->getTraceAsString() . "\n";
+            if (!empty($this->telegram)) {
+                $this->telegram->sendMessage(['chat_id' => self::BOT_CHAT, 'text' => $text]);
+            }
 		}
         $this->dbh = null;
         if (!empty($this->fp)) {
@@ -1761,6 +1768,40 @@ class RockBot {
         $this->chat_id = self::BOT_CHAT;
 		$this->telegram = new MyApi($this->settings['telegram_token']);
 		$this->parseLinks($results['results']);
+    }
+
+    private function instagram()
+    {
+        $this->telegram = new MyApi($this->settings['telegram_token']);
+        $inst = new InstaLite($this->settings['insta_login'], $this->settings['insta_pass']);
+        if (empty($inst->user['userId'])) {
+            $this->telegram->sendMessage(['chat_id' => self::BOT_CHAT, 'text' => 'Instagram login error',]);
+            return;
+        }
+        $res = $this->dbh->query("SELECT * from post WHERE posted_date < '{$this->date}' AND is_insta_post=0 AND finished=1 ORDER BY posted_date,sort,id_post;", PDO::FETCH_ASSOC)->fetchAll();
+        if (empty($res)) {
+            return;
+        }
+        $symbols_tag_replace = array(' ', '#', '  ', '-', '&', "'", '"', '/', '__');
+        foreach ($res as $post) {
+            if (empty($post['artist']) || strpos($post['media_link'], $_SERVER['HTTP_HOST']) === FALSE) {
+                continue;
+            }
+            $ready_posts[] = array(
+                'text' => "{$post['artist']}{$post['add_artist']} - {$post['album']}\n#" . str_replace($symbols_tag_replace, '_', $post['type_album']) . " $this->y\nLink for listening in bio\nhttps://t.me/rock_albums\n\n{$post['hashtag']}\n#rock #metal #core #alternative",
+                'id_post' => $post['id_post'],
+                'media_link' => str_replace("https://{$_SERVER['HTTP_HOST']}/", '', $post['media_link']),
+            );
+        }
+        if (empty($ready_posts)) {
+            return;
+        }
+        foreach ($ready_posts as $post) {
+            $inst->uploadPhoto($post['media_link'], $post['text']);
+            $this->dbh->exec("UPDATE post set is_insta_post = 1 where id_post={$post['id_post']}; ");
+            sleep(10);
+        }
+        $this->dbh->exec("UPDATE post set is_insta_post = 1 where is_insta_post=0; ");
     }
 
 }

@@ -30,7 +30,7 @@ $date = date('H:i:s');
 return;
 phpinfo();
 /*use InstaLite\InstaLite;
-$instagram = new InstaLite("new_rock_albums", "netpeak05912");//Derparol05912
+$instagram = new InstaLite("new_rock_albums", "первая работа в одессе с маленькой беквы+бейдж");
 prn($instagram);*/
 //prn($instagram->uploadPhoto('img/1588757590.jpg', 'text #hashtag'));
 //die;

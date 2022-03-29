@@ -22,6 +22,8 @@ if (!empty($_GET['cron'])) {
     fwrite($fp, $results['results']['spotify']['link'] . "\n\n");
     fclose($fp);
     return;*/
+} elseif (!empty($_REQUEST['insta'])) {
+    $type = 'insta';
 }
 new RockBot($type);
 
