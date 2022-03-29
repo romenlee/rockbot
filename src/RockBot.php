@@ -360,6 +360,8 @@ class RockBot {
                 }
                 $fld = 'video_link';
                 $fld_name = 'Video';
+            } elseif ($local_link = $this->getImageByLink($upd)) {
+                $upd = $local_link;
             }
             $this->dbh->exec("UPDATE post set {$fld}='{$upd}' where finished = 0;");
             $this->telegram->sendMessage([
@@ -1127,7 +1129,8 @@ class RockBot {
         $finfo = new finfo(FILEINFO_MIME_TYPE);
         $meme = $finfo->buffer($buffer);
         if (empty($meme) || !isset($img_memes[$meme])) {
-            $this->telegram->sendMessage(['chat_id' => $this->chat_id, 'text' => 'Не верный MEME-тип картинки']);
+            $this->telegram->sendMessage(['chat_id' => $this->chat_id, 'text' => "Не верный MEME-тип картинки: $meme"]);
+            return $ret;
         }
 
         $name_our_new_file = time() . '.' . $img_memes[$meme];
@@ -1772,12 +1775,6 @@ class RockBot {
 
     private function instagram()
     {
-        $this->telegram = new MyApi($this->settings['telegram_token']);
-        $inst = new InstaLite($this->settings['insta_login'], $this->settings['insta_pass']);
-        if (empty($inst->user['userId'])) {
-            $this->telegram->sendMessage(['chat_id' => self::BOT_CHAT, 'text' => 'Instagram login error',]);
-            return;
-        }
         $res = $this->dbh->query("SELECT * from post WHERE is_insta_post=0 AND finished=1 AND posted_date < '{$this->date}' ORDER BY posted_date,sort,id_post;", PDO::FETCH_ASSOC)->fetchAll();
         if (empty($res)) {
             return;
@@ -1794,6 +1791,12 @@ class RockBot {
             );
         }
         if (empty($ready_posts)) {
+            return;
+        }
+        $this->telegram = new MyApi($this->settings['telegram_token']);
+        $inst = new InstaLite($this->settings['insta_login'], $this->settings['insta_pass']);
+        if (empty($inst->user['userId'])) {
+            $this->telegram->sendMessage(['chat_id' => self::BOT_CHAT, 'text' => 'Instagram login error',]);
             return;
         }
         foreach ($ready_posts as $post) {
