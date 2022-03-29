@@ -1778,7 +1778,7 @@ class RockBot {
             $this->telegram->sendMessage(['chat_id' => self::BOT_CHAT, 'text' => 'Instagram login error',]);
             return;
         }
-        $res = $this->dbh->query("SELECT * from post WHERE posted_date < '{$this->date}' AND is_insta_post=0 AND finished=1 ORDER BY posted_date,sort,id_post;", PDO::FETCH_ASSOC)->fetchAll();
+        $res = $this->dbh->query("SELECT * from post WHERE is_insta_post=0 AND finished=1 AND posted_date < '{$this->date}' ORDER BY posted_date,sort,id_post;", PDO::FETCH_ASSOC)->fetchAll();
         if (empty($res)) {
             return;
         }
@@ -1801,7 +1801,7 @@ class RockBot {
             $this->dbh->exec("UPDATE post set is_insta_post = 1 where id_post={$post['id_post']}; ");
             sleep(10);
         }
-        $this->dbh->exec("UPDATE post set is_insta_post = 1 where is_insta_post=0; ");
+        $this->dbh->exec("UPDATE post set is_insta_post = 1 where is_insta_post=0 AND finished=1 AND posted_date < '{$this->date}'; ");
     }
 
 }
