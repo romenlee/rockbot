@@ -54,7 +54,8 @@ class RockBot {
     private $parser_link = 'http://167.71.12.148/';
     private $music_resources = array(
         't.me' => array('name' => "🎸 СЛУШАТЬ ⏯", 'db_field' => 't_me', 'format' => "   "),
-        'chat' => array('name' => "Chat", 'link' => 'https://t.me/rock_chat', 'format' => "\n\n"),
+        'chat' => array('name' => "Chat", 'link' => 'https://t.me/rock_chat', 'format' => "   "),
+        'insta' => array('name' => "Insta", 'link' => 'https://instagram.com/new_rock_albums', 'format' => "\n\n"),
         'spotify.com' => array('name' => 'Spotify', 'db_field' => 'spotify', 'parser_name' => 'spotify', 'image' => 1, 'format' => " ♪ "),
         'music.apple' => array('name' => 'Apple music', 'db_field' => 'music_apple', 'parser_name' => 'apple', 'format' => " ♪ "),
         'vk.com' => array('name' => 'VK', 'link' => 'https://vk.com/novue_rock_albomu_2013', 'format' => "\n"),
@@ -1802,7 +1803,7 @@ class RockBot {
         foreach ($ready_posts as $post) {
             $inst->uploadPhoto($post['media_link'], $post['text']);
             $this->dbh->exec("UPDATE post set is_insta_post = 1 where id_post={$post['id_post']}; ");
-            sleep(10);
+            sleep(3);
         }
         $this->dbh->exec("UPDATE post set is_insta_post = 1 where is_insta_post=0 AND finished=1 AND posted_date < '{$this->date}'; ");
     }
