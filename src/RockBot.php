@@ -1801,7 +1801,12 @@ class RockBot {
             return;
         }
         foreach ($ready_posts as $post) {
-            $inst->uploadPhoto($post['media_link'], $post['text']);
+            try {
+                $inst->uploadPhoto($post['media_link'], $post['text']);
+            } catch (\InstaLite\Exception $e) {
+                $text = "Upload Instagram:\n" .$e->getMessage() . "\nFile: " . $e->getFile() . " Line: " . $e->getLine() . "\nTrace:\n" . $e->getTraceAsString() . "\n";
+                $this->telegram->sendMessage(['chat_id' => self::BOT_CHAT, 'text' => $text]);
+            }
             $this->dbh->exec("UPDATE post set is_insta_post = 1 where id_post={$post['id_post']}; ");
             sleep(3);
         }
