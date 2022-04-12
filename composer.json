@@ -4,7 +4,8 @@
         "irazasyed/telegram-bot-sdk": "^2.0",
 	  "ext-json": "*",
         "vkcom/vk-php-sdk": "^5.101",
-        "tioffs/instalite": "^1.0"
+        "tioffs/instalite": "^1.0",
+        "facebook/graph-sdk": "^5.7"
 	},
 	"autoload": {
 	  "psr-4": {

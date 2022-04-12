@@ -266,12 +266,14 @@ class RockBot {
                 $parsed_images = array();
                 $upd = array();
                 $msg = '';
+                $repeat = [];
                 foreach ($sources as $k_s => $source) {
                     if (empty($parsed[$source])) {
                     	$msg .= "ERROR PARSING {$this->music_resources[$k_s]['name']} was not returned from parser\n\n";
                     }
                     if (!empty($parsed[$source]['error'])) {
 						$msg .= "ERROR PARSING {$this->music_resources[$k_s]['name']}: {$parsed[$source]['error']}\n\n";
+                        $repeat[$k_s] = $source;
                     }
                     if (!empty($parsed[$source]['link'])) {
                         $fld = $this->music_resources[$k_s]['db_field'];
@@ -284,6 +286,7 @@ class RockBot {
 						$search_album = rawurlencode("{$this->currentPost['artist']} {$this->currentPost['album']}");
 						$upd[$fld] = str_replace('{search_text}', $search_album, $this->music_resources[$k_s]['default']);
 						$msg .= "DEFAULT: {$this->music_resources[$k_s]['name']} was set\n{$upd[$fld]}\n\n";
+                        unset($repeat[$k_s]);
 					}
                     if (!empty($this->music_resources[$k_s]['image']) && !empty($parsed[$source]['image']) && strpos($parsed[$source]['image'], 'http') !== false) {
                         $parsed_images[$this->music_resources[$k_s]['image']] = array(
@@ -298,17 +301,13 @@ class RockBot {
                     foreach ($parsed_images as $img) {
                         $upd['media_link'] = $this->getImageByLink($img['image']);
                         if (!empty($upd['media_link'])) {
-							$msg .= "Image was parsed and copied from {$img['source_name']}\n\n";
+							$msg .= "Image was parsed and copied from {$img['source_name']}\n";
                             break;
                         }
                     }
                 }
                 if (empty($upd['media_link']) && empty($this->currentPost['media_link'])) {
-					$msg .= 'THERE IS NO PARSED IMAGE!!!';
-				}
-
-                if ($msg) {
-					$this->telegram->sendMessage(['chat_id' => $this->chat_id, 'text' => $msg, 'disable_web_page_preview' => true]);
+					$msg .= "THERE IS NO PARSED IMAGE!!!\n";
 				}
 
                 if (!empty($upd)) {
@@ -320,6 +319,19 @@ class RockBot {
                     $upd_str = rtrim($upd_str, ', ');
                     $this->dbh->exec("UPDATE post set {$upd_str} where finished = 0;");
                 }
+                if (!empty($repeat)) {
+                    /*if ($this->settings['is_parser_repeat']) {
+                        $parser_link2 = $this->parser_link . 'find/' . rawurlencode($this->currentPost['artist']) . '/' . rawurlencode($this->currentPost['album']) . '?callback=1&flush=1&q=';
+                        $parser_link2 .= implode(',', $repeat);
+                        $this->backgroundParser($parser_link2);
+                        $msg .= "Repeat parser...\n$parser_link2";
+                    } else {*/
+                        $msg .= '/parse_links';
+                    //}
+                }
+                if ($msg) {
+                    $this->telegram->sendMessage(['chat_id' => $this->chat_id, 'text' => $msg, 'disable_web_page_preview' => true]);
+                }
             } else {
                 $this->telegram->sendMessage(['chat_id' => $this->chat_id, 'text' => "Parser returned error: {$parsed}"]);
             }
@@ -328,6 +340,7 @@ class RockBot {
                 $this->telegram->sendMessage(['chat_id' => $this->chat_id, 'text' => "There are no links to parse"]);
             }
         }
+        //$this->dbh->exec('UPDATE settings set is_parser_repeat = 0;');
     }
     private function processLink($text)
     {
@@ -497,6 +510,7 @@ class RockBot {
             }
             $this->dbh->exec("UPDATE post set posted_date='{$posted_date}', posted={$posted}, finished=1, is_edit=0 where finished = 0;");
             $this->dbh->exec("INSERT INTO post (finished) VALUES(0);");
+            //$this->dbh->exec('UPDATE settings set is_parser_repeat = 0;');
             $this->telegram->sendMessage(['chat_id' => $this->chat_id, 'text' => 'New posting started. In order to cancel: /cancel']);
         }
     }
@@ -988,6 +1002,7 @@ class RockBot {
                 $parser_link2 = $this->parser_link . 'find/' . rawurlencode($artist) . '/' . rawurlencode($album) . '?callback=1&flush=1';
                 $this->telegram->sendMessage(['chat_id' => $this->chat_id, 'text' => "{$parser_link2}\nWait a minute for response\n/parse_links", 'disable_web_page_preview' => true]);
                 if (!empty($this->settings['parser_enabled'])) {
+                    //$this->dbh->exec('UPDATE settings set is_parser_repeat = 1;');
                     $this->backgroundParser($parser_link2);
                 }
             }
@@ -1045,6 +1060,7 @@ class RockBot {
     {
         $this->dbh->exec("DELETE FROM audio WHERE post_id={$this->currentPost['id_post']};");
         $this->dbh->exec("DELETE FROM post WHERE finished=0;");
+        //$this->dbh->exec('UPDATE settings set is_parser_repeat = 0;');
         if ($is_msg) {
             $this->telegram->sendMessage(['chat_id' => $this->chat_id, 'text' => 'Canceled. Press /start']);
         }
