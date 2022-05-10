@@ -52,7 +52,7 @@ class RockBot {
     private $settings;
     //private $parser_link = 'https://newrockbot.herokuapp.com/';
     //private $parser_link = 'http://167.71.12.148/';
-    private $parser_link = 'http://http://167.71.51.122:3001/';
+    private $parser_link = 'http://167.71.51.122:3001/';
     private $music_resources = array(
         't.me' => array('name' => "🎸 СЛУШАТЬ ⏯", 'db_field' => 't_me', 'format' => "   "),
         'chat' => array('name' => "Chat", 'link' => 'https://t.me/rock_chat', 'format' => "   "),
