@@ -15,8 +15,10 @@ class RockBot {
     const BOT_CHAT = 114082814;
     const NEW_ROCK_CHAT = -1001173139890;
     //const NEW_ROCK_CHAT = -1001455135875;
-    const AUDIO_CHAT = -1001655871229;
-    const AUDIO_CHAT_NAME = 'alternative_rock_metal';
+    //const AUDIO_CHAT = -1001655871229;
+    const AUDIO_CHAT = -1001652457722;
+    //const AUDIO_CHAT_NAME = 'alternative_rock_metal';
+    const AUDIO_CHAT_NAME = 'rock_alternative_metal';
     const VERSION_VK = '5.101';
     const GROUP_ID_VK = '48186614';//13109196
 
@@ -45,7 +47,8 @@ class RockBot {
         '-1001455135875' => 'my develop chat',//my develop chat
         '-1001173139890' => 'new rock chat',//new rock chat
         '-1001488152998' => 'my dev channel',//my dev channel
-        '-1001655871229' => 'audio chat',//audio files channel
+        //'-1001655871229' => 'audio chat',//audio files channel
+        self::AUDIO_CHAT => 'audio chat',//audio files channel
         '-1001348573922' => 'Канал Новые рок альбомы и клипы',//Канал Новые рок альбомы и клипы
     );
     private $currentPost;
