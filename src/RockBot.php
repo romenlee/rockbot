@@ -99,7 +99,9 @@ class RockBot {
 			} elseif ($type === 'save_links') {
 				$this->saveLinks();
             } elseif ($type === 'insta') {
-                $this->instagram();
+                if ($this->settings['instagram_api_enabled']) {
+                    $this->instagram();
+                }
 			} else {
 				$this->execute();
 			}
@@ -487,9 +489,6 @@ class RockBot {
             if (!empty($this->settings['vk_api_enabled']) && !$post['is_edit']) {
                 $this->vkPost($post_text, $delay_date);
             }
-			/*if (!empty($this->settings['instagram_api_enabled']) && !$post['is_edit']) {
-				$this->instaPost($post_text, $delay_date);
-			}*/
             if (empty($delay_date)) {
                 if (!empty($post_text['post_video'])) {
                     $this->telegram->sendMessage([
