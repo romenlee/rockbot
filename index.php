@@ -24,6 +24,8 @@ if (!empty($_GET['cron'])) {
     return;*/
 } elseif (!empty($_REQUEST['insta'])) {
     $type = 'insta';
+} elseif (!empty($_REQUEST['queue'])) {
+    $type = 'queue';
 }
 new RockBot($type);
 

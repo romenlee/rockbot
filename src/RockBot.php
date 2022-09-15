@@ -102,6 +102,8 @@ class RockBot {
                 if ($this->settings['instagram_api_enabled']) {
                     $this->instagram();
                 }
+            } elseif ($type === 'queue') {
+                $this->queueParse();
 			} else {
 				$this->execute();
 			}
@@ -187,6 +189,33 @@ class RockBot {
                 $this->dbh->exec("DELETE FROM post WHERE id_post={$id[1]};");
                 $this->telegram->sendMessage(['chat_id' => $this->chat_id, 'text' => "Deleted {$id[1]}"]);
             }
+        } elseif (mb_strpos($text, '/all') === 0) {
+            $links = explode("\n", str_replace('/all', '', $text));
+            $date = date('Y-m-d 00:00:00');
+            $msg = "$date\n";
+            foreach ($links as $l) {
+                $l = trim($l);
+                $sep = mb_strpos($l, ' - ');
+                if ($sep !== false) {
+                    $artist = addcslashes(trim(mb_substr($l, 0, $sep)), "'");
+                    $album = addcslashes(mb_substr($l, $sep + 3), "'");
+                    $album = trim(str_replace(['=s', '=a', '=la', '=e', '=c', '=с'], '', $album));
+                    $this->dbh->exec("INSERT INTO queue (artist, album, date)
+                      VALUES('$artist', '$album', '$date')");
+                    $msg .= "$artist - $album  ADDED\n";
+                    continue;
+                }
+                $dates = array_filter(explode(' ', $l));
+                if (empty($dates[0]) || !is_numeric($dates[0]) || empty($dates[1]) || !is_numeric($dates[1])) {
+                    continue;
+                }
+                $parsed_time = strtotime("$dates[0].$dates[1].$this->y");
+                if ($parsed_time) {
+                    $date = date('Y-m-d 00:00:00', $parsed_time);
+                    $msg .= "$date set\n";
+                }
+            }
+            $this->telegram->sendMessage(['chat_id' => $this->chat_id, 'text' => $msg]);
         } else {//post commands
             $this->currentPost = $this->dbh->query('SELECT * from post WHERE finished=0 LIMIT 1;', PDO::FETCH_ASSOC)->fetch();
             $this->vk = new \VK\Client\VKApiClient(self::VERSION_VK);
@@ -1049,6 +1078,7 @@ class RockBot {
         curl_setopt($callParser, CURLOPT_URL, $link);
         curl_setopt($callParser, CURLOPT_TIMEOUT, 1);
         curl_setopt($callParser, CURLOPT_CONNECTTIMEOUT, 5);
+        curl_setopt($callParser, CURLOPT_RETURNTRANSFER, 1);
         curl_exec($callParser);
         curl_close($callParser);
     }
@@ -1836,6 +1866,20 @@ class RockBot {
             sleep(3);
         }
         $this->dbh->exec("UPDATE post set is_insta_post = 1 where is_insta_post=0 AND finished=1 AND posted_date < '{$this->date}'; ");
+    }
+
+    private function queueParse()
+    {
+        if (empty($this->settings['parser_enabled'])) {
+            return;
+        }
+        $res = $this->dbh->query("SELECT * from queue WHERE count_try < 3 AND date < '$this->date' ORDER BY count_try DESC LIMIT 1;", PDO::FETCH_ASSOC)->fetch();
+        if (empty($res)) {
+            return;
+        }
+        $parser_link2 = $this->parser_link . 'find/' . rawurlencode($res['artist']) . '/' . rawurlencode($res['album']) . '?flush=1';
+        $this->backgroundParser($parser_link2);
+        $this->dbh->exec("UPDATE queue set count_try = count_try + 1 WHERE id_queue = {$res['id_queue']};");
     }
 
 }
