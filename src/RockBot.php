@@ -1873,11 +1873,20 @@ class RockBot {
         if (empty($this->settings['parser_enabled'])) {
             return;
         }
-        $res = $this->dbh->query("SELECT * from queue WHERE count_try < 3 AND date < '$this->date' ORDER BY count_try DESC LIMIT 1;", PDO::FETCH_ASSOC)->fetch();
+        $res = $this->dbh->query("SELECT * from queue WHERE count_try < 7 AND date < '$this->date' ORDER BY count_try DESC LIMIT 1;", PDO::FETCH_ASSOC)->fetch();
         if (empty($res)) {
             return;
         }
         $parser_link2 = $this->parser_link . 'find/' . rawurlencode($res['artist']) . '/' . rawurlencode($res['album']) . '?flush=1';
+        $neededLinks = [];
+        foreach ($this->music_resources as $mr) {
+            if (!empty($mr['db_field']) && !empty($mr['parser_name']) && $mr['parser_name'] != 'yandex') {
+                $neededLinks[] = $mr['parser_name'];
+            }
+        }
+        if (isset($neededLinks[$res['count_try']])) {
+            $parser_link2 .= "&q={$neededLinks[$res['count_try']]}";
+        }
         $this->backgroundParser($parser_link2);
         $this->dbh->exec("UPDATE queue set count_try = count_try + 1 WHERE id_queue = {$res['id_queue']};");
     }
