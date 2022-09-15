@@ -1002,7 +1002,13 @@ class RockBot {
             $this->dbh->exec("UPDATE post set {$upd_str} where finished = 0;");
             $this->telegram->sendMessage(['chat_id' => $this->chat_id, 'parse_mode' => 'HTML', 'text' => $reply['post_template'], 'disable_web_page_preview' => true]);
             if ($is_audio) {
-                $parser_link2 = $this->parser_link . 'find/' . rawurlencode($artist) . '/' . rawurlencode($album) . '?callback=1&flush=1';
+                $parser_link2 = $this->parser_link . 'find/' . rawurlencode($artist) . '/' . rawurlencode($album) . '?callback=1&flush=1&q=';
+                foreach ($this->music_resources as $mr) {
+                    if (!empty($mr['db_field']) && empty($post[$mr['db_field']]) && !empty($mr['parser_name'])) {
+                        $parser_link2 .= $mr['parser_name'] . ',';
+                    }
+                }
+                $parser_link2 = rtrim($parser_link2, ',');
                 $this->telegram->sendMessage(['chat_id' => $this->chat_id, 'text' => "{$parser_link2}\nWait a minute for response\n/parse_links", 'disable_web_page_preview' => true]);
                 if (!empty($this->settings['parser_enabled'])) {
                     //$this->dbh->exec('UPDATE settings set is_parser_repeat = 1;');
