@@ -66,7 +66,7 @@ class RockBot {
         //'music.yandex' => array('name' => 'Yandex music', 'db_field' => 'music_yandex', 'parser_name' => 'yandex', 'image' => 3, 'format' => "\n", 'default' => 'https://music.yandex.ru/search?text={search_text}&type=albums'),
         'deezer.com' => array('name' => 'Deezer', 'db_field' => 'deezer', 'parser_name' =>'deezer', 'image' => 2, 'format' => "\n"),
         'soundcloud.com' => array('name' => 'Soundcloud', 'db_field' => 'soundcloud', 'parser_name' => 'soundcloud', 'format' => "  ♪  ", 'default' => 'https://soundcloud.com/search?q={search_text}'),
-        'vk.com' => array('name' => 'vk', 'link' => 'https://vk.com/novue_rock_albomu_2013', 'format' => "  ♪  "),
+        //'vk.com' => array('name' => 'vk', 'link' => 'https://vk.com/novue_rock_albomu_2013', 'format' => "  ♪  "),
         'last.fm' => array('name' => 'last.fm', 'db_field' => 'last_fm', 'parser_name' => 'lastfm', 'format' => " ♪ ", 'default' => 'https://www.last.fm/search?q={search_text}'),
 
     );
