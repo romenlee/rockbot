@@ -60,15 +60,14 @@ class RockBot {
         't.me' => array('name' => "🎸 СЛУШАТЬ ⏯", 'db_field' => 't_me', 'format' => "   "),
         'chat' => array('name' => "Chat", 'link' => 'https://t.me/rock_chat', 'format' => "   "),
         'insta' => array('name' => "Insta", 'link' => 'https://instagram.com/new_rock_albums', 'format' => "\n\n"),
-        'spotify.com' => array('name' => 'Spotify', 'db_field' => 'spotify', 'parser_name' => 'spotify', 'image' => 1, 'format' => "  ♪  "),
+        'music.youtube' => array('name' => 'YouTube music', 'db_field' => 'music_youtube', 'parser_name' => 'youtube', 'format' => " ♪ "),
         'music.apple' => array('name' => 'Apple music', 'db_field' => 'music_apple', 'parser_name' => 'apple', 'format' => "\n"),
-        'music.youtube' => array('name' => 'YouTube music', 'db_field' => 'music_youtube', 'parser_name' => 'youtube', 'format' => "  ♪  "),
         //'music.yandex' => array('name' => 'Yandex music', 'db_field' => 'music_yandex', 'parser_name' => 'yandex', 'image' => 3, 'format' => "\n", 'default' => 'https://music.yandex.ru/search?text={search_text}&type=albums'),
-        'deezer.com' => array('name' => 'Deezer', 'db_field' => 'deezer', 'parser_name' =>'deezer', 'image' => 2, 'format' => "\n"),
-        'soundcloud.com' => array('name' => 'Soundcloud', 'db_field' => 'soundcloud', 'parser_name' => 'soundcloud', 'format' => "  ♪  ", 'default' => 'https://soundcloud.com/search?q={search_text}'),
-        //'vk.com' => array('name' => 'vk', 'link' => 'https://vk.com/novue_rock_albomu_2013', 'format' => "  ♪  "),
+        'spotify.com' => array('name' => 'Spotify', 'db_field' => 'spotify', 'parser_name' => 'spotify', 'image' => 1, 'format' => " ♪ "),
+        'deezer.com' => array('name' => 'Deezer', 'db_field' => 'deezer', 'parser_name' =>'deezer', 'image' => 2, 'format' => " ♪ "),
         'last.fm' => array('name' => 'last.fm', 'db_field' => 'last_fm', 'parser_name' => 'lastfm', 'format' => " ♪ ", 'default' => 'https://www.last.fm/search?q={search_text}'),
-
+        'soundcloud.com' => array('name' => 'Soundcloud', 'db_field' => 'soundcloud', 'parser_name' => 'soundcloud', 'format' => " ♪ ", 'default' => 'https://soundcloud.com/search?q={search_text}'),
+        //'vk.com' => array('name' => 'vk', 'link' => 'https://vk.com/novue_rock_albomu_2013', 'format' => " ♪ "),
     );
     private $types = [
         'a' => 'album',
