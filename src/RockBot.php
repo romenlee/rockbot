@@ -1394,7 +1394,7 @@ class RockBot {
             }// else $this->telegram->sendMessage(['chat_id' => self::BOT_CHAT, 'text' => "Доступ с: {$this->allowed_chats[$this->chat_id]}",]);
 
 			if ($this->chat_id == self::NEW_ROCK_CHAT) {
-				$this->processChatMessage();
+				//$this->processChatMessage();
 			}
             if ($this->chat_id == self::AUDIO_CHAT) {
                 $this->processAudioChatMessage();
