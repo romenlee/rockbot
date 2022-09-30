@@ -1886,6 +1886,8 @@ class RockBot {
         }
         if (isset($neededLinks[$res['count_try']])) {
             $parser_link2 .= "&q={$neededLinks[$res['count_try']]}";
+        } else {
+            $parser_link2 .= '&q=' . implode(',', array_splice($neededLinks, 1, 3));
         }
         $this->backgroundParser($parser_link2);
         $this->dbh->exec("UPDATE queue set count_try = count_try + 1 WHERE id_queue = {$res['id_queue']};");
