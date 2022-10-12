@@ -189,8 +189,8 @@ class RockBot {
                 $this->dbh->exec("DELETE FROM post WHERE id_post={$id[1]};");
                 $this->telegram->sendMessage(['chat_id' => $this->chat_id, 'text' => "Deleted {$id[1]}"]);
             }
-        } elseif (mb_strpos($text, '/all') === 0) {
-            $links = explode("\n", str_replace('/all', '', $text));
+        } elseif (mb_strpos($text, '/q') === 0) {
+            $links = explode("\n", str_replace('/q', '', $text));
             $date = date('Y-m-d 00:00:00');
             $msg = "$date\n";
             foreach ($links as $l) {
