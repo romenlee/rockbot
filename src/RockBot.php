@@ -572,6 +572,7 @@ class RockBot {
         } elseif (strpos($this->currentPost['media_link'], 'youtube.com/watch')) {
             $save_video = $this->vk->video()->save($vk_token, array(
                 'group_id' => self::GROUP_ID_VK,
+                'name' => $text['post_title_and_type'],
                 'wallpost' => 0,
                 'link' => $this->currentPost['media_link'],
             ));
@@ -625,6 +626,7 @@ class RockBot {
             $save_video = $this->vk->video()->save($vk_token, array(
                 'group_id' => self::GROUP_ID_VK,
                 'wallpost' => 0,
+                'name' => $text['post_vk_api_video_title'],
                 'link' => $this->currentPost['video_link'],
             ));
             $video_post = json_decode(file_get_contents(rtrim($save_video['upload_url'])), true);
@@ -1667,6 +1669,7 @@ class RockBot {
 
         $ret['post_template'] .= ')';
         $ret['post_vk_api'] .= ')';
+        $ret['post_title_and_type'] .= $ret['post_vk_api'];
         $ret['post_text'] = $ret['post_template'];
         $ret['post_vk_template'] = $ret['post_vk_api'];
         $ret['post_template'] .= $mediaMarkdown . "\n{$postData['hashtag']}";
@@ -1688,6 +1691,7 @@ class RockBot {
 
         $ret['post_video'] = '';
         $ret['post_vk_api_video'] = '';
+        $ret['post_vk_api_video_title'] = '';
         if (!empty($postData['video_link'])) {
             $v_type = empty($postData['type_video']) ? 'video' : $postData['type_video'];
             if (empty($postData['video_name'])) {
@@ -1708,7 +1712,9 @@ class RockBot {
             if ($v_type != $this->types['nlv']) {
                 $ret['post_vk_api_video'] .= " {$this->y}";
             }
-            $ret['post_vk_api_video'] .= ")\n{$postData['hashtag']}\n\nСлушать в телеграм https://t.me/rock_albums";
+            $ret['post_vk_api_video'] .= ')';
+            $ret['post_vk_api_video_title'] = $ret['post_vk_api_video'];
+            $ret['post_vk_api_video'] .= "\n{$postData['hashtag']}\n\nСлушать в телеграм https://t.me/rock_albums";
         }
         return $ret;
     }
