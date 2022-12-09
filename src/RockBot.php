@@ -515,8 +515,9 @@ class RockBot {
 				$this->telegram->sendMessage(['chat_id' => $this->chat_id, 'text' => 'THERE IS NO IMAGE OR VIDEO!!!']);
 				return;
 			}
+            $msg = '';
             if (!empty($this->settings['vk_api_enabled']) && !$post['is_edit']) {
-                $this->vkPost($post_text, $delay_date);
+                $msg .= $this->vkPost($post_text, $delay_date);
             }
             if (empty($delay_date)) {
                 if (!empty($post_text['post_video'])) {
@@ -538,16 +539,18 @@ class RockBot {
                 $human_date = date('G:i j F Y', strtotime($delay_date));
                 $posted_date = $delay_date;
                 $posted = 0;
-                $this->telegram->sendMessage(['chat_id' => $this->chat_id, 'text' => "<b>$human_date</b> will be posted", 'parse_mode' => 'HTML']);
+                $msg .= "<b>$human_date</b> will be posted\n\n";
             }
             $this->dbh->exec("UPDATE post set posted_date='{$posted_date}', posted={$posted}, finished=1, is_edit=0 where finished = 0;");
             $this->dbh->exec("INSERT INTO post (finished) VALUES(0);");
             //$this->dbh->exec('UPDATE settings set is_parser_repeat = 0;');
-            $this->telegram->sendMessage(['chat_id' => $this->chat_id, 'text' => 'New posting started. In order to cancel: /cancel']);
+            $msg .= 'New posting started. In order to cancel: /cancel';
+            $this->telegram->sendMessage(['chat_id' => $this->chat_id, 'text' => $msg, 'parse_mode' => 'HTML']);
         }
     }
 
     private function vkPost($text, $delay_date) {
+        $msg = '';
         $vk_params = array(
             'owner_id' => '-' . self::GROUP_ID_VK,
             'friends_only' => 0,
@@ -614,12 +617,12 @@ class RockBot {
         if (!empty($post)) {
             if (!empty($vk_params['publish_date'])) {
                 $human_date = date('G:i j F Y', $vk_params['publish_date']);
-                $this->telegram->sendMessage(['chat_id' => $this->chat_id, 'text' => "VK post is at <b>$human_date</b>", 'parse_mode' => 'HTML']);
+                $msg .= "VK post is at <b>$human_date</b>\n\n";
             } else {
-                $this->telegram->sendMessage(['chat_id' => $this->chat_id, 'text' => "VK posted"]);
+                $msg .= "VK posted\n\n";
             }
         } else {
-            $this->telegram->sendMessage(['chat_id' => $this->chat_id, 'text' => "ERROR VK posting"]);
+            $msg .= "ERROR VK posting\n\n";
         }
 
         if (!empty($text['post_vk_api_video'])) {
@@ -643,11 +646,12 @@ class RockBot {
             $post = $this->vk->wall()->post($vk_token, $vk_params);
             if (!empty($post)) {
                 $human_date = date('G:i j F Y', $vk_params['publish_date']);
-                $this->telegram->sendMessage(['chat_id' => $this->chat_id, 'text' => "VK VIDEO post is at <b>$human_date</b>", 'parse_mode' => 'HTML']);
+                $msg .= "VK VIDEO post is at <b>$human_date</b>\n\n";
             } else {
-                $this->telegram->sendMessage(['chat_id' => $this->chat_id, 'text' => "ERROR VK VIDEO posting"]);
+                $msg .= "ERROR VK VIDEO posting\n\n";
             }
         }
+        return $msg;
     }
 
     private function uploadVkAudios()
