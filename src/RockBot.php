@@ -597,8 +597,9 @@ class RockBot {
                 $vk_params['attachments'] .=  ',' . implode(',', $audiosVk);
             }
         } elseif ($is_link) {
-            $vk_params['attachments'] .= ',https://t.me/rock_albums';
+            //$vk_params['attachments'] .= ',https://t.me/rock_albums';
         }
+        $vk_params['attachments'] .= ',https://t.me/rock_albums';
 
         $publish_date = time();
         if (!empty($delay_date)) {
@@ -641,7 +642,7 @@ class RockBot {
                 'publish_date' => strtotime("+61 minutes", $publish_date)
             );
             if (!empty($save_video['owner_id']) && !empty($save_video['video_id']) && !empty($video_post['response'])) {
-                $vk_params['attachments'] = "video{$save_video['owner_id']}_{$save_video['video_id']}";
+                $vk_params['attachments'] = "video{$save_video['owner_id']}_{$save_video['video_id']},https://t.me/rock_albums";
             }
             $post = $this->vk->wall()->post($vk_token, $vk_params);
             if (!empty($post)) {
