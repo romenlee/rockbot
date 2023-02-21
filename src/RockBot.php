@@ -1464,6 +1464,7 @@ class RockBot {
         if (!empty($audios)) {
             $caption = '@rock_albums';
             $cAudios = count($audios);
+            $type_album = '#' . str_replace(' ', '_', $postData['type_album']);
             if ($cAudios > 2) {
                 if ($postData['strict_type'] == 0) {
                     if ($cAudios > 7) {
@@ -1474,14 +1475,14 @@ class RockBot {
                 }
                 $r = $this->telegram->sendMessage([
                     'chat_id' => $audio_channel_id,
-                    'text' => "<b><u>{$postData['artist']}{$postData['add_artist']} - {$postData['album']}</u></b> ({$postData['type_album']} {$this->y})\n<i>{$postData['hashtag']} @rock_albums</i>",
+                    'text' => "<b><u>{$postData['artist']}{$postData['add_artist']} - {$postData['album']}</u></b> ($type_album {$this->y})\n<i>{$postData['hashtag']} @rock_albums</i>",
                     'parse_mode' => 'HTML',
                     'disable_web_page_preview' => true,
                 ]);
                 if (!empty($postData['is_post'])) {
                     $this->telegram->sendMessage([
                         'chat_id' => $this->audio_channel_reserve,
-                        'text' => "<b><u>{$postData['artist']}{$postData['add_artist']} - {$postData['album']}</u></b> ({$postData['type_album']} {$this->y})\n<i>{$postData['hashtag']} @rock_albums</i>",
+                        'text' => "<b><u>{$postData['artist']}{$postData['add_artist']} - {$postData['album']}</u></b> ($type_album {$this->y})\n<i>{$postData['hashtag']} @rock_albums</i>",
                         'parse_mode' => 'HTML',
                         'disable_web_page_preview' => true,
                     ]);
@@ -1492,7 +1493,7 @@ class RockBot {
                     $this->dbh->exec("UPDATE post set t_me='{$postData['t_me']}', msg_audio_id=$audio_msg_id where id_post = {$postData['id_post']};");
                 }
             } else {
-                $caption = "{$postData['type_album']} {$postData['hashtag']} @rock_albums";
+                $caption = "<i>{$postData['hashtag']}</i> $type_album @rock_albums";
             }
             if ($cAudios > 1/* && $cAudios <= 10*/) {
                 if (($cAudios % 10) == 0) {
@@ -1518,6 +1519,7 @@ class RockBot {
                         $media[] = [
                             'type' => 'audio',
                             'media' => $audio['file'],
+                            'parse_mode' => 'HTML',
                             'caption' => $media_caption,
                         ];
                     }
@@ -1562,12 +1564,14 @@ class RockBot {
                     $r = $this->telegram->sendAudio([
                         'chat_id' => $audio_channel_id,
                         'audio' => $audio['file'],
+                        'parse_mode' => 'HTML',
                         'caption' => $caption,
                     ]);
                     if (!empty($postData['is_post'])) {
                         $this->telegram->sendAudio([
                             'chat_id' => $this->audio_channel_reserve,
                             'audio' => $audio['file'],
+                            'parse_mode' => 'HTML',
                             'caption' => $caption,
                         ]);
                     }
