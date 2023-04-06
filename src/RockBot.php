@@ -1679,7 +1679,7 @@ class RockBot {
 
         $ret['post_template'] .= ')';
         $ret['post_vk_api'] .= ')';
-        $ret['post_title_and_type'] .= $ret['post_vk_api'];
+        $ret['post_title_and_type'] = $ret['post_vk_api'];
         $ret['post_text'] = $ret['post_template'];
         $ret['post_vk_template'] = $ret['post_vk_api'];
         $ret['post_template'] .= $mediaMarkdown . "\n{$postData['hashtag']}";
