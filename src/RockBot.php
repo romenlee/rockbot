@@ -1464,16 +1464,20 @@ class RockBot {
         if (!empty($audios)) {
             $caption = '@rock_albums';
             $cAudios = count($audios);
-            $type_album = str_replace(' ', '_', $postData['type_album']);
-            if ($cAudios > 2) {
-                if ($postData['strict_type'] == 0) {
-                    if ($cAudios > 7) {
-                        $type_album = $postData['type_album'] = 'album';
-                    } elseif ($cAudios > 3) {
-                        $type_album = $postData['type_album'] = 'EP';
-                    }
+
+            $type_album = $postData['type_album'];
+            if ($postData['strict_type'] == 0) {
+                if ($cAudios > 7) {
+                    $type_album = $postData['type_album'] = 'album';
+                } elseif ($cAudios > 3) {
+                    $type_album = $postData['type_album'] = 'EP';
                 }
+            }
+            if (strpos($type_album, ' ') === false) {
                 $type_album = "#$type_album";
+            }
+
+            if ($cAudios > 2) {
                 $r = $this->telegram->sendMessage([
                     'chat_id' => $audio_channel_id,
                     'text' => "<b><u>{$postData['artist']}{$postData['add_artist']} - {$postData['album']}</u></b> ($type_album {$this->y})\n<i>{$postData['hashtag']} @rock_albums</i>",
@@ -1494,7 +1498,7 @@ class RockBot {
                     $this->dbh->exec("UPDATE post set t_me='{$postData['t_me']}', msg_audio_id=$audio_msg_id where id_post = {$postData['id_post']};");
                 }
             } else {
-                $caption = "<i>{$postData['hashtag']}</i> #$type_album @rock_albums";
+                $caption = "<i>{$postData['hashtag']}</i> $type_album @rock_albums";
             }
             if ($cAudios > 1/* && $cAudios <= 10*/) {
                 if (($cAudios % 10) == 0) {
