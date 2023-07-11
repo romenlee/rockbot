@@ -198,11 +198,14 @@ class RockBot {
                 $sep = mb_strpos($l, ' - ');
                 if ($sep !== false) {
                     $artist = addcslashes(trim(mb_substr($l, 0, $sep)), "'");
+                    $info_artist = $this->dbh->query("SELECT * from artist WHERE artist_name='{$artist}' LIMIT 1;", PDO::FETCH_ASSOC)->fetch();
                     $album = addcslashes(mb_substr($l, $sep + 3), "'");
                     $album = trim(str_replace(['=s', '=a', '=la', '=e', '=c', '=с'], '', $album));
                     $this->dbh->exec("INSERT INTO queue (artist, album, date)
                       VALUES('$artist', '$album', '$date')");
-                    $msg .= "$artist - $album  ADDED\n";
+                    $tag = $info_artist['hashtag'] ?? '';
+                    $subscribers = $info_artist['subscribers'] ?? '';
+                    $msg .= "$artist - $album $tag $subscribers ADDED\n";
                     continue;
                 }
                 $dates = array_filter(explode(' ', $l));
