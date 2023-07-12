@@ -190,6 +190,11 @@ class RockBot {
                 $this->telegram->sendMessage(['chat_id' => $this->chat_id, 'text' => "Deleted {$id[1]}"]);
             }
         } elseif (mb_strpos($text, '/q') === 0) {
+            $is_save = true;
+            if (mb_strpos($text, '/qttt') === 0) {
+                $text = str_replace('/qttt', '', $text);
+                $is_save = false;
+            }
             $links = explode("\n", str_replace('/q', '', $text));
             $date = date('Y-m-d 00:00:00');
             $msg = "$date\n";
@@ -201,8 +206,10 @@ class RockBot {
                     $info_artist = $this->dbh->query("SELECT * from artist WHERE artist_name='{$artist}' LIMIT 1;", PDO::FETCH_ASSOC)->fetch();
                     $album = addcslashes(mb_substr($l, $sep + 3), "'");
                     $album = trim(str_replace(['=s', '=a', '=la', '=e', '=c', '=с'], '', $album));
-                    $this->dbh->exec("INSERT INTO queue (artist, album, date)
-                      VALUES('$artist', '$album', '$date')");
+                    if ($is_save) {
+                        $this->dbh->exec("INSERT INTO queue (artist, album, date)
+                           VALUES('$artist', '$album', '$date')");
+                    }
                     $tag = $info_artist['hashtag'] ?? '';
                     $subscribers = $info_artist['subscribers'] ?? '';
                     $msg .= "$artist - $album $tag $subscribers\n\n";
