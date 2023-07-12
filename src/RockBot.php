@@ -205,7 +205,7 @@ class RockBot {
                       VALUES('$artist', '$album', '$date')");
                     $tag = $info_artist['hashtag'] ?? '';
                     $subscribers = $info_artist['subscribers'] ?? '';
-                    $msg .= "$artist - $album $tag $subscribers ADDED\n";
+                    $msg .= "$artist - $album $tag $subscribers\n\n";
                     continue;
                 }
                 $dates = array_filter(explode(' ', $l));
@@ -1039,7 +1039,7 @@ class RockBot {
             $upd_str = rtrim($upd_str, ', ');
 
             $this->dbh->exec("UPDATE post set {$upd_str} where finished = 0;");
-            $this->telegram->sendMessage(['chat_id' => $this->chat_id, 'parse_mode' => 'HTML', 'text' => $reply['post_template'], 'disable_web_page_preview' => true]);
+            $this->telegram->sendMessage(['chat_id' => $this->chat_id, 'parse_mode' => 'HTML', 'text' => "{$reply['post_template']} " . ($info_artist['subscribers'] ?? ''), 'disable_web_page_preview' => true]);
             if ($is_audio) {
                 $parser_link2 = $this->parser_link . 'find/' . rawurlencode($artist) . '/' . rawurlencode($album) . '?callback=1&flush=1&q=';
                 foreach ($this->music_resources as $mr) {
@@ -1068,8 +1068,10 @@ class RockBot {
             $upd_names = array();
             if (!empty($artist)) {
                 $artist_db = addcslashes($artist, "'");
+                $artist_db = addcslashes($artist, "'");
+                $info_artist = $this->dbh->query("SELECT * from artist WHERE artist_name='{$artist_db}' LIMIT 1;", PDO::FETCH_ASSOC)->fetch();
                 $upd_str = "artist = '{$artist_db}', ";
-                $upd_names[] = 'Artist';
+                $upd_names[] = 'Artist ' . ($info_artist['hashtag'] ?? '') . ' ' . ($info_artist['subscribers'] ?? '');
             }
             if (!empty($add_artist)) {
                 $upd_str .= "add_artist = '{$add_artist}'";
