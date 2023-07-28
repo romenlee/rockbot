@@ -212,7 +212,7 @@ class RockBot {
                     }
                     $tag = $info_artist['hashtag'] ?? '';
                     $subscribers = $info_artist['subscribers'] ?? '';
-                    $msg .= "$artist - $album $tag $subscribers\n\n";
+                    $msg .= "$artist - $album $tag $subscribers\n";
                     continue;
                 }
                 $dates = array_filter(explode(' ', $l));
