@@ -57,7 +57,7 @@ class RockBot {
     //private $parser_link = 'http://167.71.12.148/';
     private $parser_link = 'http://167.71.51.122/';
     private $music_resources = array(
-        't.me' => array('name' => "🎸 СЛУШАТЬ ⏯", 'db_field' => 't_me', 'format' => "   "),
+        't.me' => array('name' => "🎸 LISTEN ⏯", 'db_field' => 't_me', 'format' => "   "),
         'chat' => array('name' => "Chat", 'link' => 'https://t.me/rock_chat', 'format' => "\n\n"),
         //'insta' => array('name' => "Insta", 'link' => 'https://instagram.com/new_rock_albums', 'format' => "\n\n"),
         'music.youtube' => array('name' => 'YouTube music', 'db_field' => 'music_youtube', 'parser_name' => 'youtube', 'format' => " ♪ "),
