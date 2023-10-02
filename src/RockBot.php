@@ -1563,7 +1563,7 @@ class RockBot {
                         }
                     }
                 }
-                if ($cAudios > 2) {
+                /*if ($cAudios > 2) {
                     $this->telegram->sendSticker([
                         'chat_id' => $audio_channel_id,
                         'sticker' => 'CAACAgIAAxkBAAIE2F6mIbABvnIAAQqXBP1iFqSU-ZJ_0wACDAADNjqiGWbGGbgDTI49GQQ',
@@ -1574,7 +1574,7 @@ class RockBot {
                             'sticker' => 'CAACAgIAAxkBAAIE2F6mIbABvnIAAQqXBP1iFqSU-ZJ_0wACDAADNjqiGWbGGbgDTI49GQQ',
                         ]);
                     }
-                }
+                }*/
             } else {
                 $i = 0;
                 foreach ($audios as $audio) {
@@ -1606,7 +1606,7 @@ class RockBot {
                         $i = 0;
                     }
                 }
-                if ($cAudios > 10) {
+                /*if ($cAudios > 10) {
                     $this->telegram->sendSticker([
                         'chat_id' => $audio_channel_id,
                         'sticker' => 'CAACAgIAAxkBAAIE2F6mIbABvnIAAQqXBP1iFqSU-ZJ_0wACDAADNjqiGWbGGbgDTI49GQQ',
@@ -1617,7 +1617,7 @@ class RockBot {
                             'sticker' => 'CAACAgIAAxkBAAIE2F6mIbABvnIAAQqXBP1iFqSU-ZJ_0wACDAADNjqiGWbGGbgDTI49GQQ',
                         ]);
                     }
-                }
+                }*/
             }
         }
         return $audio_msg_id;
