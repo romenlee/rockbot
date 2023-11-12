@@ -60,13 +60,31 @@ class RockBot {
         't.me' => array('name' => "🎸 LISTEN ⏯", 'db_field' => 't_me', 'format' => "   "),
         'chat' => array('name' => "Chat", 'link' => 'https://t.me/rock_chat', 'format' => "\n\n"),
         //'insta' => array('name' => "Insta", 'link' => 'https://instagram.com/new_rock_albums', 'format' => "\n\n"),
-        'music.youtube' => array('name' => 'YouTube music', 'db_field' => 'music_youtube', 'parser_name' => 'youtube', 'format' => " ♪ "),
-        'music.apple' => array('name' => 'Apple music', 'db_field' => 'music_apple', 'parser_name' => 'apple', 'format' => "\n"),
-        //'music.yandex' => array('name' => 'Yandex music', 'db_field' => 'music_yandex', 'parser_name' => 'yandex', 'image' => 3, 'format' => "\n", 'default' => 'https://music.yandex.ru/search?text={search_text}&type=albums'),
-        'spotify.com' => array('name' => 'Spotify', 'db_field' => 'spotify', 'parser_name' => 'spotify', 'image' => 1, 'format' => " ♪ ", 'default' => 'https://open.spotify.com/search/{search_text}'),
-        'deezer.com' => array('name' => 'Deezer', 'db_field' => 'deezer', 'parser_name' =>'deezer', 'image' => 2, 'format' => " ♪ "),
-        'last.fm' => array('name' => 'last.fm', 'db_field' => 'last_fm', 'parser_name' => 'lastfm', 'format' => " ♪ ", 'default' => 'https://www.last.fm/search?q={search_text}'),
-        'soundcloud.com' => array('name' => 'Soundcloud', 'db_field' => 'soundcloud', 'parser_name' => 'soundcloud', 'format' => " ♪ ", 'default' => 'https://soundcloud.com/search?q={search_text}'),
+        'music.youtube' => array(
+            'name' => 'YouTube music', 'db_field' => 'music_youtube', 'parser_name' => 'youtube', 'format' => " ♪ ",
+            'search_link' => 'https://music.youtube.com/search?q={search_text}',
+        ),
+        'music.apple' => array(
+            'name' => 'Apple music', 'db_field' => 'music_apple', 'parser_name' => 'apple', 'format' => "\n",
+            'search_link' => 'https://music.apple.com/us/search?term={search_text}',
+        ),
+        //'music.yandex' => array('name' => 'Yandex music', 'db_field' => 'music_yandex', 'parser_name' => 'yandex', 'image' => 3, 'format' => "\n", 'search_link' => 'https://music.yandex.ru/search?text={search_text}&type=albums', 'default' => 1,),
+        'spotify.com' => array(
+            'name' => 'Spotify', 'db_field' => 'spotify', 'parser_name' => 'spotify', 'image' => 1, 'format' => " ♪ ",
+            'search_link' => 'https://open.spotify.com/search/{search_text}',
+        ),
+        'deezer.com' => array(
+            'name' => 'Deezer', 'db_field' => 'deezer', 'parser_name' =>'deezer', 'image' => 2, 'format' => " ♪ ",
+            'search_link' => 'https://www.deezer.com/search/{search_text}',
+        ),
+        'last.fm' => array(
+            'name' => 'last.fm', 'db_field' => 'last_fm', 'parser_name' => 'lastfm', 'format' => " ♪ ",
+            'search_link' => 'https://www.last.fm/search?q={search_text}', 'default' => 1,
+        ),
+        'soundcloud.com' => array(
+            'name' => 'Soundcloud', 'db_field' => 'soundcloud', 'parser_name' => 'soundcloud', 'format' => " ♪ ",
+            'search_link' => 'https://soundcloud.com/search?q={search_text}', 'default' => 1,
+        ),
         //'vk.com' => array('name' => 'vk', 'link' => 'https://vk.com/novue_rock_albomu_2013', 'format' => " ♪ "),
     );
     private $types = [
@@ -268,6 +286,8 @@ class RockBot {
                 $order = (int) trim(str_replace('/sort ', '', $text));
                 $this->dbh->exec("UPDATE post set sort = $order where finished=0;");
                 $this->telegram->sendMessage(['chat_id' => $this->chat_id, 'text' => 'Sorted']);
+            } elseif (mb_strpos($text, '/use_search') === 0) {
+                $this->updateWithSearch();
             } elseif (mb_strpos($text, '/add ') === 0) {
                 $add_txt = str_replace('/add ', '', $text);
                 if (!empty($add_txt)) {
@@ -294,6 +314,40 @@ class RockBot {
         return true;
     }
 
+    private function updateWithSearch()
+    {
+        if (empty($this->currentPost['artist']) || empty($this->currentPost['album'])) {
+            $this->telegram->sendMessage(['chat_id' => $this->chat_id, 'text' => 'There is no Artist or Album for searching']);
+            return;
+        }
+        $search_album = rawurlencode("{$this->currentPost['artist']} {$this->currentPost['album']}");
+        $upd = [];
+        $msg = '';
+        foreach ($this->music_resources as $key_mr => $mr) {
+            if (empty($mr['db_field'])) {
+                continue;
+            }
+            $fld = $mr['db_field'];
+            if (empty($this->currentPost[$fld]) && !empty($mr['search_link'])) {
+                $upd[$fld] = str_replace('{search_text}', $search_album, $mr['search_link']);
+                $msg .= "DEFAULT: {$mr['name']} was set\n{$upd[$fld]}\n\n";
+            }
+        }
+
+        if (empty($upd)) {
+            $this->telegram->sendMessage(['chat_id' => $this->chat_id, 'text' => 'All link fields are filled']);
+            return;
+        }
+
+        $upd_str = '';
+        foreach ($upd as $ku => $u) {
+            $u = addcslashes($u, "'");
+            $upd_str .= "$ku='$u', ";
+        }
+        $upd_str = rtrim($upd_str, ', ');
+        $this->dbh->exec("UPDATE post set $upd_str where finished = 0;");
+        $this->telegram->sendMessage(['chat_id' => $this->chat_id, 'text' => $msg, 'disable_web_page_preview' => true]);
+    }
     private function parseLinks($parsed = array())
     {
         $sources = array();
@@ -329,7 +383,7 @@ class RockBot {
 					) {
 						$fld = $this->music_resources[$k_s]['db_field'];
 						$search_album = rawurlencode("{$this->currentPost['artist']} {$this->currentPost['album']}");
-						$upd[$fld] = str_replace('{search_text}', $search_album, $this->music_resources[$k_s]['default']);
+						$upd[$fld] = str_replace('{search_text}', $search_album, $this->music_resources[$k_s]['search_link']);
 						$msg .= "DEFAULT: {$this->music_resources[$k_s]['name']} was set\n{$upd[$fld]}\n\n";
                         unset($repeat[$k_s]);
 					}
