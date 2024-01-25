@@ -19,7 +19,7 @@ class RockBot {
     const AUDIO_CHAT = -1001651364088;
     //const AUDIO_CHAT_NAME = 'alternative_rock_metal';
     //const AUDIO_CHAT_NAME = 'rock_alternative_metal';
-    const AUDIO_CHAT_NAME = 'metal_rock_alternative';
+    const AUDIO_CHAT_NAME = 'file_stock';
     const VERSION_VK = '5.101';
     const GROUP_ID_VK = '48186614';//13109196
 
