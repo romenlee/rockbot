@@ -1885,6 +1885,14 @@ class RockBot {
 			]);
 			$this->dbh->exec("UPDATE post set posted=1 where id_post = {$id_post};");
 			fwrite($this->fp, $r . "\n");
+            $response = json_decode($r, true);
+            if (isset($response['message_id'])) {
+                $this->telegram->sendAnyRequest('setMessageReaction', [
+                    'chat_id' => "@{$this->post_channel}",
+                    'message_id' => $response['message_id'],
+                    'reaction' => json_encode([['type' => 'emoji', 'emoji' => "👍"]]),
+                ]);
+            }
 		}
     }
 
