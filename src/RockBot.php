@@ -1871,11 +1871,19 @@ class RockBot {
 		$this->telegram = new MyApi($this->settings['telegram_token']);
 		foreach ($ready_posts as $id_post => $post_ready_text) {
 			if (!empty($post_ready_text['video'])) {
-				$this->telegram->sendMessage([
+				$r = $this->telegram->sendMessage([
 					'chat_id' => "@{$this->post_channel}",
 					'text' => $post_ready_text['video'],
 					'parse_mode' => 'HTML',
 				]);
+                $response = json_decode($r, true);
+                if (isset($response['message_id'])) {
+                    $this->telegram->sendAnyRequest('setMessageReaction', [
+                        'chat_id' => "@{$this->post_channel}",
+                        'message_id' => $response['message_id'],
+                        'reaction' => json_encode([['type' => 'emoji', 'emoji' => "👍"]]),
+                    ]);
+                }
 			}
 			$r = $this->telegram->sendMessage([
 				'chat_id' => "@{$this->post_channel}",
@@ -1884,7 +1892,7 @@ class RockBot {
 				'parse_mode' => 'HTML',
 			]);
 			$this->dbh->exec("UPDATE post set posted=1 where id_post = {$id_post};");
-			fwrite($this->fp, $r . "\n");
+			//fwrite($this->fp, $r . "\n");
             $response = json_decode($r, true);
             if (isset($response['message_id'])) {
                 $this->telegram->sendAnyRequest('setMessageReaction', [
