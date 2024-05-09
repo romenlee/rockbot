@@ -23,6 +23,9 @@ class RockBot {
     const VERSION_VK = '5.101';
     const GROUP_ID_VK = '48186614';//13109196
 
+    const SYMBOLS_FILE_REPLACE = array('&', "'", '"', '/', "\\", "*", ":", "?", "<", ">", "|");
+    const SYMBOLS_FILE_RESTORE = array('jixol', 'wzmtb', 'sgeqr', 'yfapk', 'uqjhr', 'vkdmn', 'xcspe', 'njrka', 'qoztw', 'luhfm', 'dtfbi');
+
     private $fp;
     private $date;
     private $y;
@@ -657,7 +660,7 @@ class RockBot {
         if ($is_copy && !empty($vk_params['attachments'])) {
             $this->telegram->sendMessage(['chat_id' => $this->chat_id, 'text' => "Upload to VK..."]);
             $audiosVk = $this->uploadVkAudios();
-            sleep(3);
+            sleep(2);
             if (!empty($audiosVk)) {
                 $vk_params['attachments'] .=  ',' . implode(',', $audiosVk);
             }
@@ -755,12 +758,12 @@ class RockBot {
                 'v' => self::VERSION_VK,
                 'access_token' => $this->settings['vk_token'],
             );
-            $audioName = explode('--', $file);
+            $audioName = explode('---', $file);
             if (!empty($audioName[1])) {
-                $vk_params['artist'] = $audioName[1];
+                $vk_params['artist'] = str_replace(self::SYMBOLS_FILE_RESTORE, self::SYMBOLS_FILE_REPLACE, $audioName[1]);
             }
             if (!empty($audioName[2])) {
-                $vk_params['title'] = $audioName[2];
+                $vk_params['title'] = str_replace(self::SYMBOLS_FILE_RESTORE, self::SYMBOLS_FILE_REPLACE, $audioName[2]);
             }
 
             $ch = curl_init();
@@ -1225,14 +1228,17 @@ class RockBot {
             return false;
         }
 
+        // todo decode symbols when copy to vk
+        //$symbols_file_replace = array('&', "'", '"', '/', "\\", "*", ":", "?", "<", ">", "|");
         foreach ($audios as $audio) {
             $file = $this->telegram->getFile(['file_id' =>$audio['file']]);
             $file_from_tgrm = "https://api.telegram.org/file/bot{$this->settings['telegram_token']}/{$file['file_path']}";
             $ext_arr = explode(".", $file['file_path']);
             $ext = end($ext_arr);
-            $name_our_new_file =  "{$audio['id_message']}--{$audio['artist']}--{$audio['title']}--";
+            $name_our_new_file =  "{$audio['id_message']}---{$audio['artist']}---{$audio['title']}---";
+            $name_our_new_file = str_replace(self::SYMBOLS_FILE_REPLACE, self::SYMBOLS_FILE_RESTORE, $name_our_new_file);
             if (!copy($file_from_tgrm, "music/{$name_our_new_file}.{$ext}")) {
-                $this->telegram->sendMessage(['chat_id' => $this->chat_id, 'text' => "AUDIO COPY ERROR"]);
+                $this->telegram->sendMessage(['chat_id' => $this->chat_id, 'text' => "AUDIO COPY ERROR\n$file_from_tgrm\n{$name_our_new_file}.{$ext}"]);
             }
         }
         $this->telegram->sendMessage(['chat_id' => $this->chat_id, 'text' => "Audios copying was finished"]);
