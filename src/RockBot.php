@@ -1228,8 +1228,6 @@ class RockBot {
             return false;
         }
 
-        // todo decode symbols when copy to vk
-        //$symbols_file_replace = array('&', "'", '"', '/', "\\", "*", ":", "?", "<", ">", "|");
         foreach ($audios as $audio) {
             $file = $this->telegram->getFile(['file_id' =>$audio['file']]);
             $file_from_tgrm = "https://api.telegram.org/file/bot{$this->settings['telegram_token']}/{$file['file_path']}";
