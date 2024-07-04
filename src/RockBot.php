@@ -569,17 +569,27 @@ class RockBot {
                     'parse_mode' => 'HTML',
                 ]);
             }
-            $this->telegram->sendMessage([
-                'chat_id' => $this->chat_id,
-                'text' => $post_text['post_text'],
-                'disable_web_page_preview' => (empty($post['media_link'])),
-                'parse_mode' => 'HTML',
-            ]);
+            if ($post['media_file']) {
+                $this->telegram->sendPhoto([
+                    'chat_id' => $this->chat_id,
+                    'photo' => $post['media_file'],
+                    'parse_mode' => 'HTML',
+                    'caption' => $post_text['post_photo'],
+                    'show_caption_above_media' => true,
+                ]);
+            } else {
+                $this->telegram->sendMessage([
+                    'chat_id' => $this->chat_id,
+                    'text' => $post_text['post_text'],
+                    'disable_web_page_preview' => (empty($post['media_link'])),
+                    'parse_mode' => 'HTML',
+                ]);
+            }
         //}
         //$this->telegram->sendMessage(['chat_id' => $this->chat_id, 'text' => $post_text['post_vk_template'], 'disable_web_page_preview' => true]);
 
         if ($is_post) {
-			if (empty($post['media_link']) && !empty($this->settings['forbid_post_without_image'])) {
+			if (empty($post['media_file']) && empty($post['media_link']) && !empty($this->settings['forbid_post_without_image'])) {
 				$this->telegram->sendMessage(['chat_id' => $this->chat_id, 'text' => 'THERE IS NO IMAGE OR VIDEO!!!']);
 				return;
 			}
@@ -595,12 +605,22 @@ class RockBot {
                         'parse_mode' => 'HTML',
                     ]);
                 }
-                $this->telegram->sendMessage([
-                    'chat_id' => $post_channel_id,
-                    'text' => $post_text['post_text'],
-                    'disable_web_page_preview' => (empty($post['media_link'])),
-                    'parse_mode' => 'HTML',
-                ]);
+                if ($post['media_file']) {
+                    $this->telegram->sendPhoto([
+                        'chat_id' => $post_channel_id,
+                        'photo' => $post['media_file'],
+                        'parse_mode' => 'HTML',
+                        'caption' => $post_text['post_photo'],
+                        'show_caption_above_media' => true,
+                    ]);
+                } else {
+                    $this->telegram->sendMessage([
+                        'chat_id' => $post_channel_id,
+                        'text' => $post_text['post_text'],
+                        'disable_web_page_preview' => (empty($post['media_link'])),
+                        'parse_mode' => 'HTML',
+                    ]);
+                }
                 $posted_date = $this->date;
                 $posted = 1;
             } else {
@@ -626,7 +646,6 @@ class RockBot {
             'message' => $text['post_vk_api'],
         );
         $vk_token = $this->settings['vk_token'];
-        $is_link = false;
         if (strpos($this->currentPost['media_link'], "//{$_SERVER['HTTP_HOST']}/img/")) {
             $photo_server = $this->vk->photos()->getWallUploadServer($vk_token);
             $photo_path = ltrim(parse_url($this->currentPost['media_link'], PHP_URL_PATH), '/');
@@ -638,7 +657,6 @@ class RockBot {
             ));
             if (!empty($save_photo[0]['owner_id']) && !empty($save_photo[0]['id'])) {
                 $vk_params['attachments'] = "photo{$save_photo[0]['owner_id']}_{$save_photo[0]['id']}";
-                $is_link = true;
             }
         } elseif (strpos($this->currentPost['media_link'], 'youtube.com/watch')) {
             $save_video = $this->vk->video()->save($vk_token, array(
@@ -664,8 +682,6 @@ class RockBot {
             if (!empty($audiosVk)) {
                 $vk_params['attachments'] .=  ',' . implode(',', $audiosVk);
             }
-        } elseif ($is_link) {
-            //$vk_params['attachments'] .= ',https://t.me/rock_albums';
         }
         $vk_params['attachments'] .= ',https://t.me/rock_albums';
 
@@ -1133,7 +1149,6 @@ class RockBot {
             $upd_names = array();
             if (!empty($artist)) {
                 $artist_db = addcslashes($artist, "'");
-                $artist_db = addcslashes($artist, "'");
                 $info_artist = $this->dbh->query("SELECT * from artist WHERE artist_name='{$artist_db}' LIMIT 1;", PDO::FETCH_ASSOC)->fetch();
                 $upd_str = "artist = '{$artist_db}', ";
                 $upd_names[] = 'Artist ' . ($info_artist['hashtag'] ?? '') . ' ' . ($info_artist['subscribers'] ?? '');
@@ -1270,6 +1285,10 @@ class RockBot {
         $name_our_new_file = time() . '.' . $img_memes[$meme];
         if (copy($link, "img/".$name_our_new_file)) {
             $ret = "https://{$_SERVER['HTTP_HOST']}/img/$name_our_new_file";
+            $r = $this->telegram->sendPhoto(['chat_id' => $this->chat_id, 'photo' => $link]);
+            if (!empty($r['photo']) && isset($r['photo'][count($r['photo'] - 1)]['file_id'])) {
+                $this->dbh->exec("UPDATE post set media_file='{$r['photo'][count($r['photo'] - 1)]['file_id']}' where finished = 0;");
+            }
         } else {
             $this->telegram->sendMessage(['chat_id' => $this->chat_id, 'text' => "Не удалось скопировать картинку на сервер"]);
         }
@@ -1282,7 +1301,8 @@ class RockBot {
             return false;
         }
         $photo = $this->result['message']['photo'];
-        $file = $this->telegram->getFile(['file_id' =>$photo[count($photo) - 1]['file_id']]);
+        $file_id = $photo[count($photo) - 1]['file_id'];
+        $file = $this->telegram->getFile(['file_id' => $file_id]);
         $file_from_tgrm = "https://api.telegram.org/file/bot{$this->settings['telegram_token']}/{$file['file_path']}";
         // достаем расширение файла
         $ext_arr = explode(".", $file['file_path']);
@@ -1291,7 +1311,7 @@ class RockBot {
         $name_our_new_file = time().".".$ext;
         if (copy($file_from_tgrm, "img/".$name_our_new_file)) {
             $img_link = "https://{$_SERVER['HTTP_HOST']}/img/$name_our_new_file";
-            $res = $this->dbh->exec("UPDATE post set media_link='{$img_link}' where finished = 0;");
+            $res = $this->dbh->exec("UPDATE post set media_link='{$img_link}', media_file='{$file_id}' where finished = 0;");
             if ($res) {
                 $this->telegram->sendMessage(['chat_id' => $this->chat_id, 'text' => "Image was added"]);
             }
@@ -1756,18 +1776,22 @@ class RockBot {
         $ret['post_vk_api'] .= ')';
         $ret['post_title_and_type'] = $ret['post_vk_api'];
         $ret['post_text'] = $ret['post_template'];
+        $ret['post_photo'] = $ret['post_template'];
         $ret['post_vk_template'] = $ret['post_vk_api'];
         $ret['post_template'] .= $mediaMarkdown . "\n{$postData['hashtag']}";
+        $ret['post_photo'] .= "\n<i>{$postData['hashtag']}</i>";
         $ret['post_text'] .= "{$media}\n<i>{$postData['hashtag']}</i>";
         $ret['post_vk_template'] .= "\n{$postData['hashtag']}\n{$postData['media_link']}";
         if (!empty($linkResult)) {
             $ret['post_template'] .= "\n\n" . $linkResultMarkdown;
             $ret['post_text'] .= "\n\n{$linkResult}";
+            $ret['post_photo'] .= "\n\n{$linkResult}";
         }
         $ret['post_vk_api'] .= "\n{$postData['hashtag']}\n";
         if (!empty($postData['add_text'])) {
             $ret['post_template'] .= "\n\n{$postData['add_text']}";
             $ret['post_text'] .= "\n\n{$postData['add_text']}";
+            $ret['post_photo'] .= "\n\n{$postData['add_text']}";
             $ret['post_vk_template'] .= "\n{$postData['add_text']}\n";
             $ret['post_vk_api'] .= "\n{$postData['add_text']}\n";
         }
@@ -1858,6 +1882,8 @@ class RockBot {
             $post_text = $this->getPostText($post);
             $ready_posts[$post['id_post']] = array(
                 'text' => $post_text['post_text'],
+                'photo_text' => $post_text['post_photo'],
+                'media_file' => !empty($post['media_file']) ? $post['media_file'] : '',
                 'disable_preview' => (empty($post['media_link'])),
                 'title' => $post_text['post_title'],
             );
@@ -1889,12 +1915,23 @@ class RockBot {
                     ]);
                 }
 			}
-			$r = $this->telegram->sendMessage([
-				'chat_id' => "@{$this->post_channel}",
-				'text' => $post_ready_text['text'],
-				'disable_web_page_preview' => $post_ready_text['disable_preview'],
-				'parse_mode' => 'HTML',
-			]);
+
+            if ($post_ready_text['media_file']) {
+                $r = $this->telegram->sendPhoto([
+                    'chat_id' => "@{$this->post_channel}",
+                    'photo' => $post_ready_text['media_file'],
+                    'parse_mode' => 'HTML',
+                    'caption' => $post_ready_text['photo_text'],
+                    'show_caption_above_media' => true,
+                ]);
+            } else {
+                $r = $this->telegram->sendMessage([
+                    'chat_id' => "@{$this->post_channel}",
+                    'text' => $post_ready_text['text'],
+                    'disable_web_page_preview' => $post_ready_text['disable_preview'],
+                    'parse_mode' => 'HTML',
+                ]);
+            }
 			$this->dbh->exec("UPDATE post set posted=1 where id_post = {$id_post};");
 			//fwrite($this->fp, $r . "\n");
             $response = json_decode($r, true);
