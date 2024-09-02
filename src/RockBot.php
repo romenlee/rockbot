@@ -1286,8 +1286,8 @@ class RockBot {
         if (copy($link, "img/".$name_our_new_file)) {
             $ret = "https://{$_SERVER['HTTP_HOST']}/img/$name_our_new_file";
             $r = $this->telegram->sendPhoto(['chat_id' => $this->chat_id, 'photo' => $link]);
-            if (!empty($r['photo']) && isset($r['photo'][count($r['photo'] - 1)]['file_id'])) {
-                $this->dbh->exec("UPDATE post set media_file='{$r['photo'][count($r['photo'] - 1)]['file_id']}' where finished = 0;");
+            if (!empty($r['photo']) && isset($r['photo'][count($r['photo']) - 1]['file_id'])) {
+                $this->dbh->exec("UPDATE post set media_file='{$r['photo'][count($r['photo']) - 1]['file_id']}' where finished = 0;");
             }
         } else {
             $this->telegram->sendMessage(['chat_id' => $this->chat_id, 'text' => "Не удалось скопировать картинку на сервер"]);
