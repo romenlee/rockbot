@@ -1491,7 +1491,7 @@ class RockBot {
             }// else $this->telegram->sendMessage(['chat_id' => self::BOT_CHAT, 'text' => "Доступ с: {$this->allowed_chats[$this->chat_id]}",]);
 
 			if ($this->chat_id == self::NEW_ROCK_CHAT) {
-				//$this->processChatMessage();
+				$this->processChatMessage();
 			}
             if ($this->chat_id == self::AUDIO_CHAT) {
                 $this->processAudioChatMessage();
@@ -1508,7 +1508,27 @@ class RockBot {
 
     private function processChatMessage()
 	{
-		//777000 - messages automatically forwarded to the discussion group
+		if (!empty($this->result['message']['forward_date'])) {
+            $text = '';
+            if (!empty($this->result['message']['caption'])) {
+                $text = $this->result['message']['caption'];
+            }
+            if (!empty($this->result['message']['text'])) {
+                $text = $this->result['message']['text'];
+            }
+
+            $text = mb_strtolower($text);
+            if (
+                mb_strpos($text, 'казино') !== FALSE
+                || mb_strpos($text, 'jetton') !== FALSE
+                || mb_strpos($text, 'toncoin') !== FALSE
+            ) {
+                $this->telegram->sendAnyRequest('deleteMessage', ['chat_id' => $this->chat_id, 'message_id' => $this->result['message']['message_id']]);
+            }
+        }
+        return;
+
+        //777000 - messages automatically forwarded to the discussion group
 		if (empty($this->result['message']['text']) || empty($this->result['message']['message_id']) || !empty($this->result['message']['entities'])
 			|| empty($this->result['message']['from']['id']) || $this->result['message']['from']['id'] != 777000) {
 			return;
