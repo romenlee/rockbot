@@ -1508,6 +1508,10 @@ class RockBot {
 
     private function processChatMessage()
 	{
+        if  (mb_stripos(json_encode($this->result, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE), 'jetton') !== FALSE) {
+            $this->telegram->sendAnyRequest('deleteMessage', ['chat_id' => $this->chat_id, 'message_id' => $this->result['message']['message_id']]);
+            return;
+        }
 		if (!empty($this->result['message']['forward_date'])) {
             $text = '';
             if (!empty($this->result['message']['caption'])) {
@@ -1522,6 +1526,8 @@ class RockBot {
                 mb_strpos($text, 'казино') !== FALSE
                 || mb_strpos($text, 'jetton') !== FALSE
                 || mb_strpos($text, 'toncoin') !== FALSE
+                || mb_strpos($text, 'cаsinо') !== FALSE
+                || mb_strpos($text, 'бонус') !== FALSE
             ) {
                 $this->telegram->sendAnyRequest('deleteMessage', ['chat_id' => $this->chat_id, 'message_id' => $this->result['message']['message_id']]);
             }
@@ -2035,7 +2041,7 @@ class RockBot {
     private function queueParse()
     {
         if (empty($this->settings['parser_enabled'])) {
-            return;
+            //return;
         }
         $res = $this->dbh->query("SELECT * from queue WHERE count_try < 7 AND date < '$this->date' ORDER BY count_try DESC LIMIT 1;", PDO::FETCH_ASSOC)->fetch();
         if (empty($res)) {
