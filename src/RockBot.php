@@ -65,7 +65,7 @@ class RockBot {
         'chat' => array('name' => "Chat", 'link' => 'https://t.me/rock_chat', 'format' => "\n\n"),
         //'insta' => array('name' => "Insta", 'link' => 'https://instagram.com/new_rock_albums', 'format' => "\n\n"),
         'music.youtube' => array(
-            'name' => 'YouTube music', 'db_field' => 'music_youtube', 'parser_name' => 'youtube', 'format' => " ♪ ",
+            'name' => 'YouTube music', 'db_field' => 'music_youtube', /*'parser_name' => 'youtube',*/ 'format' => " ♪ ", 'default' => 1,
             'search_link' => 'https://music.youtube.com/search?q={search_text}',
         ),
         'music.apple' => array(
@@ -355,9 +355,14 @@ class RockBot {
     private function parseLinks($parsed = array())
     {
         $sources = array();
+        $search_sources = array();
         foreach ($this->music_resources as $key_mr => $mr) {
-            if (!empty($mr['db_field']) && empty($this->currentPost[$mr['db_field']]) && !empty($mr['parser_name'])) {
-                $sources[$key_mr] = $mr['parser_name'];
+            if (!empty($mr['db_field']) && empty($this->currentPost[$mr['db_field']])) {
+                if (!empty($mr['parser_name'])) {
+                    $sources[$key_mr] = $mr['parser_name'];
+                } elseif (!empty($mr['default'])) {
+                    $search_sources[] = $key_mr;
+                }
             }
         }
         if (!empty($sources)) {
@@ -396,6 +401,15 @@ class RockBot {
                             'source_name' => $this->music_resources[$k_s]['name'],
                             'image' => $parsed[$source]['image'],
                         );
+                    }
+                }
+
+                if (!empty($search_sources)) {
+                    foreach ($search_sources as $search_source) {
+                        $fld = $this->music_resources[$search_source]['db_field'];
+                        $search_album = rawurlencode("{$this->currentPost['artist']} {$this->currentPost['album']}");
+                        $upd[$fld] = str_replace('{search_text}', $search_album, $this->music_resources[$search_source]['search_link']);
+                        $msg .= "DEFAULT: {$this->music_resources[$search_source]['name']} was set\n{$upd[$fld]}\n\n";
                     }
                 }
 
@@ -1528,6 +1542,7 @@ class RockBot {
                 || mb_strpos($text, 'toncoin') !== FALSE
                 || mb_strpos($text, 'cаsinо') !== FALSE
                 || mb_strpos($text, 'бонус') !== FALSE
+                || mb_strpos($text, 'kritvbs') !== FALSE
             ) {
                 $this->telegram->sendAnyRequest('deleteMessage', ['chat_id' => $this->chat_id, 'message_id' => $this->result['message']['message_id']]);
             }
@@ -2043,21 +2058,22 @@ class RockBot {
         if (empty($this->settings['parser_enabled'])) {
             //return;
         }
-        $res = $this->dbh->query("SELECT * from queue WHERE count_try < 7 AND date < '$this->date' ORDER BY count_try DESC LIMIT 1;", PDO::FETCH_ASSOC)->fetch();
+        $neededLinks = [];
+        foreach ($this->music_resources as $mr) {
+            if (!empty($mr['db_field']) && !empty($mr['parser_name'])) {
+                $neededLinks[] = $mr['parser_name'];
+            }
+        }
+        $c_links = count($neededLinks);
+        $res = $this->dbh->query("SELECT * from queue WHERE count_try <= $c_links AND date < '$this->date' ORDER BY count_try DESC LIMIT 1;", PDO::FETCH_ASSOC)->fetch();
         if (empty($res)) {
             return;
         }
         $parser_link2 = $this->parser_link . 'find/' . rawurlencode($res['artist']) . '/' . rawurlencode($res['album']) . '?flush=1';
-        $neededLinks = [];
-        foreach ($this->music_resources as $mr) {
-            if (!empty($mr['db_field']) && !empty($mr['parser_name']) && $mr['parser_name'] != 'yandex') {
-                $neededLinks[] = $mr['parser_name'];
-            }
-        }
         if (isset($neededLinks[$res['count_try']])) {
             $parser_link2 .= "&q={$neededLinks[$res['count_try']]}";
         } else {
-            $parser_link2 .= '&q=' . implode(',', array_splice($neededLinks, 1, 3));
+            $parser_link2 .= '&q=' . implode(',', array_splice($neededLinks, 0, 3));
         }
         $this->backgroundParser($parser_link2);
         $this->dbh->exec("UPDATE queue set count_try = count_try + 1 WHERE id_queue = {$res['id_queue']};");
