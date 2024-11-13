@@ -673,6 +673,7 @@ class RockBot {
                 $vk_params['attachments'] = "photo{$save_photo[0]['owner_id']}_{$save_photo[0]['id']}";
             }
         } elseif (strpos($this->currentPost['media_link'], 'youtube.com/watch')) {
+            return;
             $save_video = $this->vk->video()->save($vk_token, array(
                 'group_id' => self::GROUP_ID_VK,
                 'name' => $text['post_title_and_type'],
@@ -724,7 +725,7 @@ class RockBot {
             $msg .= "ERROR VK posting\n\n";
         }
 
-        if (!empty($text['post_vk_api_video'])) {
+        /*if (!empty($text['post_vk_api_video'])) {
             $save_video = $this->vk->video()->save($vk_token, array(
                 'group_id' => self::GROUP_ID_VK,
                 'wallpost' => 0,
@@ -749,7 +750,7 @@ class RockBot {
             } else {
                 $msg .= "ERROR VK VIDEO posting\n\n";
             }
-        }
+        }*/
         return $msg;
     }
 
@@ -1543,6 +1544,11 @@ class RockBot {
                 || mb_strpos($text, 'cаsinо') !== FALSE
                 || mb_strpos($text, 'бонус') !== FALSE
                 || mb_strpos($text, 'kritvbs') !== FALSE
+                || mb_strpos($text, 'ночные бабочки') !== FALSE
+                || mb_strpos($text, 'интим') !== FALSE
+                || mb_strpos($text, 'uнтum') !== FALSE
+                || mb_strpos($text, 'обнаженные') !== FALSE
+                || mb_strpos($text, 'проститутк') !== FALSE
             ) {
                 $this->telegram->sendAnyRequest('deleteMessage', ['chat_id' => $this->chat_id, 'message_id' => $this->result['message']['message_id']]);
             }
