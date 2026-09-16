@@ -9,8 +9,6 @@
 
 use Telegram\Bot\Exceptions\TelegramSDKException;
 use InstaLite\InstaLite;
-use VK\Exceptions\VKApiException;
-use VK\Exceptions\VKClientException;
 
 class RockBot {
 
@@ -151,12 +149,6 @@ class RockBot {
 			}
         } catch (\InstaLite\Exception $e) {
             $text = "Instagram:\n" .$e->getMessage() . "\nFile: " . $e->getFile() . " Line: " . $e->getLine() . "\nTrace:\n" . $e->getTraceAsString() . "\n";
-            if (!empty($this->telegram)) {
-                $this->telegram->sendMessage(['chat_id' => self::BOT_CHAT, 'text' => $text]);
-            }
-        } catch (VKApiException | VKClientException $e) {
-            // VK API is flaky (timeouts, "photo is undefined"): report to the chat instead of dying silently, the post stays finished=0 and can be resent
-            $text = "VK error:\n" . $e->getMessage() . "\nFile: " . $e->getFile() . " Line: " . $e->getLine() . "\n\nPost was NOT sent, try again";
             if (!empty($this->telegram)) {
                 $this->telegram->sendMessage(['chat_id' => self::BOT_CHAT, 'text' => $text]);
             }
@@ -676,10 +668,16 @@ class RockBot {
         );
         $vk_token = $this->settings['vk_token'];
         if (strpos($this->currentPost['media_link'], "//{$_SERVER['HTTP_HOST']}/img/")) {
+            $photo_server = $this->vk->photos()->getWallUploadServer($vk_token);
             $photo_path = ltrim(parse_url($this->currentPost['media_link'], PHP_URL_PATH), '/');
-            $photo_attachment = $this->vkUploadWallPhoto($vk_token, $photo_path);
-            if (!empty($photo_attachment)) {
-                $vk_params['attachments'] = $photo_attachment;
+            $photo_upload = $this->vk->getRequest()->upload($photo_server['upload_url'], 'photo', $photo_path);
+            $save_photo = $this->vk->photos()->saveWallPhoto($vk_token, array(
+                'server' => $photo_upload['server'],
+                'photo' => $photo_upload['photo'],
+                'hash' => $photo_upload['hash'],
+            ));
+            if (!empty($save_photo[0]['owner_id']) && !empty($save_photo[0]['id'])) {
+                $vk_params['attachments'] = "photo{$save_photo[0]['owner_id']}_{$save_photo[0]['id']}";
             }
         } elseif (strpos($this->currentPost['media_link'], 'youtube.com/watch')) {
             return;
@@ -761,42 +759,6 @@ class RockBot {
             }
         }*/
         return $msg;
-    }
-
-    /**
-     * VK upload server intermittently returns photo "[]" and api.vk.ru times out (10 s hardcoded in SDK),
-     * so retry the whole getWallUploadServer -> upload -> saveWallPhoto chain a few times
-     * @return string attachment id like photo-123_456
-     * @throws VKClientException when all attempts failed
-     */
-    private function vkUploadWallPhoto($vk_token, $photo_path, $max_attempts = 3)
-    {
-        $last_error = '';
-        for ($attempt = 1; $attempt <= $max_attempts; $attempt++) {
-            try {
-                $photo_server = $this->vk->photos()->getWallUploadServer($vk_token);
-                $photo_upload = $this->vk->getRequest()->upload($photo_server['upload_url'], 'photo', $photo_path);
-                if (empty($photo_upload['photo']) || $photo_upload['photo'] === '[]') {
-                    throw new VKClientException('VK upload server returned empty photo');
-                }
-                $save_photo = $this->vk->photos()->saveWallPhoto($vk_token, array(
-                    'server' => $photo_upload['server'],
-                    'photo' => $photo_upload['photo'],
-                    'hash' => $photo_upload['hash'],
-                ));
-                if (!empty($save_photo[0]['owner_id']) && !empty($save_photo[0]['id'])) {
-                    return "photo{$save_photo[0]['owner_id']}_{$save_photo[0]['id']}";
-                }
-                throw new VKClientException('saveWallPhoto returned no photo id');
-            } catch (VKApiException | VKClientException $e) {
-                $last_error = $e->getMessage();
-                $this->telegram->sendMessage(['chat_id' => $this->chat_id, 'text' => "VK photo upload attempt {$attempt}/{$max_attempts} failed: {$last_error}"]);
-                if ($attempt < $max_attempts) {
-                    sleep($attempt * 2);
-                }
-            }
-        }
-        throw new VKClientException("VK photo upload failed after {$max_attempts} attempts: {$last_error}");
     }
 
     private function uploadVkAudios()
