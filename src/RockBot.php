@@ -209,6 +209,8 @@ class RockBot {
         } elseif ($text == '/parser_off') {
             $this->dbh->exec('UPDATE settings set parser_enabled = 0;');
             $this->telegram->sendMessage(['chat_id' => $this->chat_id, 'text' => 'Parser disabled']);
+        } elseif ($text == '/settings' || mb_strpos($text, '/settings ') === 0) {
+            $this->settingsCommand($text);
         } elseif (mb_strpos($text, '/edit_') === 0) {
             $id = explode('_', $text);
             if (!empty($id[1])) {
@@ -331,6 +333,35 @@ class RockBot {
             }
         }
         return true;
+    }
+
+    /**
+     * /settings - list all fields, /settings field - show value, /settings field value - update value
+     */
+    private function settingsCommand($text)
+    {
+        $params = preg_split('/\s+/', trim(mb_substr($text, mb_strlen('/settings'))), 2, PREG_SPLIT_NO_EMPTY);
+        if (empty($params)) {
+            $msg = "Settings fields:\n" . implode("\n", array_keys($this->settings));
+            $this->telegram->sendMessage(['chat_id' => $this->chat_id, 'text' => $msg]);
+            return;
+        }
+        $field = $params[0];
+        // field name can't be bound in a prepared statement, so it is whitelisted by the existing columns
+        if (!array_key_exists($field, $this->settings)) {
+            $this->telegram->sendMessage(['chat_id' => $this->chat_id, 'text' => "Unknown setting: $field"]);
+            return;
+        }
+        if (!isset($params[1])) {
+            $value = $this->settings[$field] ?? 'NULL';
+            $this->telegram->sendMessage(['chat_id' => $this->chat_id, 'text' => "$field = $value"]);
+            return;
+        }
+        $value = $params[1];
+        $stmt = $this->dbh->prepare("UPDATE settings set `$field` = :value;");
+        $stmt->execute([':value' => $value]);
+        $this->settings[$field] = $value;
+        $this->telegram->sendMessage(['chat_id' => $this->chat_id, 'text' => "$field updated: $value"]);
     }
 
     private function updateWithSearch()
